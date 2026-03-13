@@ -1,0 +1,244 @@
+/* --- Базовые настройки и переменные --- */
+:root {
+    --bg-color: #121212;        /* Темный фон */
+    --surface-color: #1e1e1e;   /* Цвет карточек */
+    --primary-color: #061ef4;   /* Акцентный красный (как у Netflix) */
+    --primary-hover: #061ef4;   /* Красный при наведении */
+    --text-main: #ffffff;       /* Основной текст */
+    --text-muted: #b3b3b3;      /* Второстепенный текст */
+    --font-family: 'Montserrat', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    font-family: var(--font-family);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Чтобы подвал всегда был внизу */
+}
+
+/* Ограничитель ширины контента */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* --- Шапка (Header) --- */
+.header {
+    background-color: rgba(0, 0, 0, 0.9); /* Сделали чуть темнее для контраста */
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    backdrop-filter: blur(5px); /* Красивый эффект размытия фона под шапкой */
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    letter-spacing: 1px;
+    cursor: pointer;
+}
+
+/* Группа для меню и кнопки */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 30px; /* Расстояние между меню и кнопкой */
+}
+
+.nav a {
+    color: var(--text-main);
+    text-decoration: none;
+    margin-left: 20px;
+    font-weight: 600;
+    transition: color 0.3s;
+}
+
+.nav a:hover {
+    color: var(--primary-color);
+}
+
+/* --- Основной контент --- */
+main {
+    flex-grow: 1; /* Растягивает main, чтобы прижать footer к низу */
+    padding: 40px 0;
+}
+
+.section-title {
+    font-size: 2rem;
+    margin-bottom: 30px;
+    border-left: 5px solid var(--primary-color);
+    padding-left: 15px;
+}
+
+/* Сетка карточек фильмов (CSS Grid) */
+.movies-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Адаптивная сетка */
+    gap: 30px;
+}
+
+/* --- Карточка фильма --- */
+.movie-card {
+    background-color: var(--surface-color);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.movie-card:hover {
+    transform: translateY(-5px); /* Легкое поднятие при наведении */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+}
+
+.movie-poster {
+    background-color: #333;
+    height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    /* Позже здесь будет картинка через background-image */
+}
+
+.movie-info {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.movie-title {
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+}
+
+.movie-genre {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+/* --- Выпадающее меню (Dropdown) --- */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-trigger {
+    color: var(--text-main);
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.3s;
+    padding: 10px 0; /* Увеличиваем зону наведения */
+}
+
+.dropdown:hover .dropdown-trigger {
+    color: var(--primary-color);
+}
+
+.dropdown-content {
+    display: none; /* Скрываем меню по умолчанию */
+    position: absolute;
+    background-color: var(--surface-color);
+    min-width: 180px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.7);
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 1;
+    top: 100%; /* Располагаем ровно под словом "Меню" */
+    left: 50%;
+    transform: translateX(-50%); /* Центрируем выпадающий блок */
+    margin-top: 15px; /* Отступ сверху */
+}
+
+/* Показываем меню при наведении на родительский блок .dropdown */
+.dropdown:hover .dropdown-content {
+    display: block;
+    animation: fadeIn 0.3s ease; /* Плавное появление */
+}
+
+.dropdown-content a {
+    color: var(--text-main);
+    padding: 12px 20px;
+    text-decoration: none;
+    display: block;
+    transition: background-color 0.3s, color 0.3s;
+    font-weight: 500;
+}
+
+.dropdown-content a:hover {
+    background-color: #2a2a2a; /* Светлее, чем фон карточек */
+    color: var(--primary-color);
+}
+
+/* Кнопка бронирования */
+.btn-book {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 5px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: auto; /* Прижимает кнопку к низу карточки */
+}
+
+.btn-book:hover {
+    background-color: var(--primary-hover);
+}
+
+/* --- Кнопка "Войти в профиль" --- */
+.btn-login {
+    background-color: transparent;
+    color: var(--text-main);
+    border: 2px solid var(--primary-color);
+    padding: 8px 20px;
+    border-radius: 5px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-login:hover {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 0 15px rgba(229, 9, 20, 0.4); /* Легкое красное свечение */
+}
+
+/* Простая анимация для плавного появления меню */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* --- Подвал (Footer) --- */
+.footer {
+    background-color: #000;
+    text-align: center;
+    padding: 20px 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 40px;
+}

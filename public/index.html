@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кинотеатр "Дипломный"</title>
+    <!-- Подключаем современный шрифт -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">🎬 КиноДиплом</div>
+            
+            <!-- Группируем навигацию и кнопку вместе -->
+            <div class="header-right">
+                <nav class="nav">
+                    <!-- Блок выпадающего меню -->
+                    <div class="dropdown">
+                        <span class="dropdown-trigger">Меню ▾</span>
+                        <div class="dropdown-content">
+                            <a href="#">Афиша</a>
+                            <a href="#">Скоро в кино</a>
+                            <a href="#">О нас</a>
+                        </div>
+                    </div>
+                </nav>
+                
+                <!-- Кнопка входа -->
+                <button class="btn-login">Войти в профиль</button>
+            </div>
+
+        </div>
+    </header>
+
+
+    <main class="container">
+        <section class="movies-section">
+            <h1 class="section-title">Сейчас в кино</h1>
+            
+            <!-- Сюда с помощью JavaScript (app.js) будут добавляться фильмы -->
+            <div id="movies-list" class="movies-grid">
+                
+                <!-- Это пример карточки фильма для наглядности (потом будем генерировать их через JS) -->
+                <div class="movie-card">
+                    <div class="movie-poster">Постер</div>
+                    <div class="movie-info">
+                        <h3 class="movie-title">Дюна: Часть вторая</h3>
+                        <p class="movie-genre">Фантастика, боевик</p>
+                        <button class="btn-book">Купить билет</button>
+                    </div>
+                </div>
+                <!-- Конец примера карточки -->
+
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Информационная система бронирования билетов</p>
+        </div>
+    </footer>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
+

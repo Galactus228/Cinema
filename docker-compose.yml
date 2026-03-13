@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Сервис вашего приложения на Fastify
+  app:
+    build: . # Говорим Docker собрать образ, используя Dockerfile из этой же папки
+    container_name: cinema_fastify_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000" # Открываем порт 3000 на вашем ПК для доступа к приложению
+    volumes:
+      - .:/usr/src/app # "Пробрасываем" код проекта в контейнер для живой разработки
+      - /usr/src/app/node_modules
+    environment:
+      # Переменные для подключения к базе данных
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: your_strong_password # <-- ЗАМЕНИТЕ НА СВОЙ ПАРОЛЬ
+      DB_NAME: cinema_db
+    depends_on:
+      - db # Гарантирует, что контейнер с БД запустится раньше приложения
+
+  # Сервис базы данных MySQL
+  db:
+    image: mysql:8.0
+    container_name: cinema_mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: cinema_db
+      MYSQL_ROOT_PASSWORD: your_strong_password # <-- ИСПОЛЬЗУЙТЕ ТОТ ЖЕ ПАРОЛЬ
+    ports:
+      # Открываем порт 3307 на вашем ПК, чтобы HeidiSQL мог подключиться к БД
+      - "3307:3306"
+    volumes:
+      # Сохраняем данные БД в именованном томе, чтобы они не терялись
+      - dbdata:/var/lib/mysql
+
+volumes:
+  dbdata:
