@@ -11,7 +11,10 @@ fastify.register(require('@fastify/static'), {
 fastify.get('/', (req, reply) => {
     reply.sendFile('index.html');
 });
-
+// === НОВЫЙ РОУТ ДЛЯ СТРАНИЦЫ "О НАС" ===
+fastify.get('/about', (req, reply) => {
+    reply.sendFile('about.html');
+});
 // Пример API-маршрута. Позже вы будете получать данные из БД.
 fastify.get('/api/movies', (req, reply) => {
     // Временный ответ-заглушка

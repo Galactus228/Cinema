@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>О нас - Кинотеатр "Дипломный"</title>
+    <!-- Подключаем тот же файл стилей -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Используем ту же шапку, что и на главной -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">🎬 КиноДиплом</div>
+            <div class="header-right">
+                <nav class="nav">
+                    <div class="dropdown">
+                        <span class="dropdown-trigger">Меню ▾</span>
+                        <div class="dropdown-content">
+                            <a href="/">Афиша</a>
+                            <a href="#">Скоро в кино</a>
+                            <a href="/about">О нас</a>
+                        </div>
+                    </div>
+                </nav>
+                <button class="btn-login">Войти в профиль</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Основной контент страницы "О нас" -->
+    <main class="container">
+        <section class="about-section">
+            <h1 class="section-title">О нашем проекте</h1>
+            <div class="about-content">
+                <p>
+                    Добро пожаловать в "КиноДиплом" — дипломный проект, разработанный для демонстрации современных подходов к созданию веб-приложений. 
+                    Эта информационная система для бронирования и продажи билетов в кинотеатр создана с нуля и включает в себя полный цикл разработки, от проектирования до развертывания.
+                </p>
+                
+                <h3>Используемый стек технологий:</h3>
+                <ul>
+                    <li><strong>Frontend:</strong> Чистый HTML, CSS и JavaScript.</li>
+                    <li><strong>Backend:</strong> Высокопроизводительный фреймворк Fastify на Node.js.</li>
+                    <li><strong>База данных:</strong> Надежная и быстрая MySQL.</li>
+                    <li><strong>Контейнеризация:</strong> Docker и Docker Compose для изоляции и простоты развертывания.</li>
+                    <li><strong>Инструменты:</strong> Git/GitHub для контроля версий и HeidiSQL для управления БД.</li>
+                </ul>
+
+                <p>
+                    Цель проекта — создать удобный, быстрый и масштабируемый сервис, который позволит пользователям легко находить сеансы и покупать билеты, а администраторам — эффективно управлять контентом.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <!-- И тот же подвал -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Разработка информационной системы бронирования билетов</p>
+        </div>
+    </footer>
+
+    <!-- JS-скрипты для этой страницы (пока не нужны) -->
+</body>
+</html>

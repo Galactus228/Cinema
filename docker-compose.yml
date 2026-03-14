@@ -15,7 +15,7 @@ services:
       # Переменные для подключения к базе данных
       DB_HOST: db
       DB_USER: root
-      DB_PASSWORD: your_strong_password # <-- ЗАМЕНИТЕ НА СВОЙ ПАРОЛЬ
+      DB_PASSWORD: eduard23 # <-- ЗАМЕНИТЕ НА СВОЙ ПАРОЛЬ
       DB_NAME: cinema_db
     depends_on:
       - db # Гарантирует, что контейнер с БД запустится раньше приложения
@@ -27,7 +27,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: cinema_db
-      MYSQL_ROOT_PASSWORD: your_strong_password # <-- ИСПОЛЬЗУЙТЕ ТОТ ЖЕ ПАРОЛЬ
+      MYSQL_ROOT_PASSWORD: eduard23 # <-- ИСПОЛЬЗУЙТЕ ТОТ ЖЕ ПАРОЛЬ
     ports:
       # Открываем порт 3307 на вашем ПК, чтобы HeidiSQL мог подключиться к БД
       - "3307:3306"

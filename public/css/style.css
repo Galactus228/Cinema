@@ -242,3 +242,28 @@ main {
     font-size: 0.9rem;
     margin-top: 40px;
 }
+/* --- Стили для страницы "О нас" --- */
+.about-content {
+    background-color: var(--surface-color);
+    padding: 30px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.about-content h3 {
+    color: var(--primary-color);
+    margin-top: 25px;
+    margin-bottom: 15px;
+}
+
+.about-content ul {
+    list-style-type: '🎬'; /* Используем эмодзи в качестве маркера списка */
+    padding-left: 25px;
+}
+
+.about-content li {
+    margin-bottom: 10px;
+    padding-left: 10px;
+}
+
