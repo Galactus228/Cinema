@@ -15,6 +15,18 @@ fastify.get('/', (req, reply) => {
 fastify.get('/about', (req, reply) => {
     reply.sendFile('about.html');
 });
+// === НОВЫЕ РОУТЫ ДЛЯ СТРАНИЦ-ЗАГЛУШЕК ===
+fastify.get('/news', (req, reply) => {
+    reply.sendFile('news.html');
+});
+
+fastify.get('/promotions', (req, reply) => {
+    reply.sendFile('promotions.html');
+});
+
+fastify.get('/coming-soon', (req, reply) => {
+    reply.sendFile('coming-soon.html');
+});
 // Пример API-маршрута. Позже вы будете получать данные из БД.
 fastify.get('/api/movies', (req, reply) => {
     // Временный ответ-заглушка

@@ -148,7 +148,8 @@ main {
     font-weight: 600;
     cursor: pointer;
     transition: color 0.3s;
-    padding: 10px 0; /* Увеличиваем зону наведения */
+    padding: 15px 10px; /* Увеличили внутренние отступы */
+    display: inline-block;
 }
 
 .dropdown:hover .dropdown-trigger {
@@ -156,24 +157,36 @@ main {
 }
 
 .dropdown-content {
-    display: none; /* Скрываем меню по умолчанию */
+   display: none;
     position: absolute;
     background-color: var(--surface-color);
-    min-width: 180px;
+    min-width: 200px;
     box-shadow: 0px 8px 16px rgba(0,0,0,0.7);
     border-radius: 8px;
-    overflow: hidden;
     z-index: 1;
-    top: 100%; /* Располагаем ровно под словом "Меню" */
+    top: 100%;
     left: 50%;
-    transform: translateX(-50%); /* Центрируем выпадающий блок */
-    margin-top: 15px; /* Отступ сверху */
+    transform: translateX(-50%);
+    
+    /* Убираем margin-top, так как он создает "дырку" */
+    margin-top: 10px; 
+}
+
+/* СОЗДАЕМ НЕВИДИМЫЙ МОСТИК */
+.dropdown-content::before {
+    content: "";
+    position: absolute;
+    top: -15px; /* Этот мостик закрывает пустую зону сверху */
+    left: 0;
+    width: 100%;
+    height: 15px;
+    background: transparent; /* Он не виден глазу */
 }
 
 /* Показываем меню при наведении на родительский блок .dropdown */
 .dropdown:hover .dropdown-content {
     display: block;
-    animation: fadeIn 0.3s ease; /* Плавное появление */
+    animation: fadeIn 0.2s ease;
 }
 
 .dropdown-content a {
@@ -265,5 +278,28 @@ main {
 .about-content li {
     margin-bottom: 10px;
     padding-left: 10px;
+}
+/* --- Стили для страниц-заглушек --- */
+.placeholder-section {
+    text-align: center;
+    padding: 80px 20px;
+    background-color: var(--surface-color);
+    border-radius: 8px;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.placeholder-section .section-title {
+    border-left: none; /* Убираем красную линию у заголовка */
+    padding-left: 0;
+    margin-bottom: 20px;
+}
+
+.placeholder-section p {
+    font-size: 1.2rem;
+    color: var(--text-muted);
 }
 
