@@ -1,42 +1,61 @@
-const path = require('path');
-const fastify = require('fastify')({ logger: true });
+console.log("Скрипт app.js загружен и начал работу");
 
-// Регистрируем плагин для отдачи статичных файлов (html, css, js)
-fastify.register(require('@fastify/static'), {
-  root: path.join(__dirname, 'public'),
-  prefix: '/', // делаем папку public корневой для URL
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("DOM полностью загружен. Начинаю запрос к API...");
+    const moviesGrid = document.getElementById('movies-list');
+    
+    if (!moviesGrid) {
+        console.error("ОШИБКА: Элемент с id 'movies-list' не найден в HTML!");
+        return;
+    }
+
+    try {
+        // ВАЖНО: используем путь /api/schedule, который выдает ваш JSON
+        const response = await fetch('/api/schedule');
+        const movies = await response.json();
+        console.log("Данные от API получены:", movies);
+
+        moviesGrid.innerHTML = ''; // Очищаем всё перед выводом
+
+        if (movies.length === 0) {
+            moviesGrid.innerHTML = '<p>Сеансов на сегодня больше нет.</p>';
+            return;
+        }
+
+        movies.forEach(movie => {
+            const movieCard = document.createElement('div');
+            movieCard.className = 'movie-card';
+
+            const sessionsHtml = movie.sessions.map(s => {
+                const date = new Date(s.time);
+                const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                return `<button class="btn-session" title="${s.hall}">${time}</button>`;
+            }).join('');
+
+            // Используем постер из базы или заглушку
+            const posterStyle = movie.poster ? `style="background-image: url('${movie.poster}'); background-size: cover; background-position: center;"` : '';
+
+            movieCard.innerHTML = `
+                <div class="movie-poster" ${posterStyle}>
+                    ${!movie.poster ? 'Постер отсутствует' : ''}
+                </div>
+                <div class="movie-info">
+                    <h3 class="movie-title">${movie.title}</h3>
+                    <p class="movie-genre">${movie.genre} • ${movie.duration} мин.</p>
+                    <div class="sessions-list">
+                        ${sessionsHtml}
+                    </div>
+                    <button class="btn-book">Подробнее</button>
+                </div>
+            `;
+            moviesGrid.appendChild(movieCard);
+        });
+        console.log("Отрисовка фильмов завершена успешно");
+
+    } catch (error) {
+        console.error('КРИТИЧЕСКАЯ ОШИБКА:', error);
+        moviesGrid.innerHTML = '<p style="color: red;">Ошибка при загрузке афиши. Проверьте консоль (F12).</p>';
+    }
 });
 
-// Роут для главной страницы (отдаст index.html)
-fastify.get('/', (req, reply) => {
-    reply.sendFile('index.html');
-});
 
-// Пример простого API-роута
-fastify.get('/api/movies', (req, reply) => {
-    // Здесь будет логика получения фильмов из БД
-    reply.send({ movies: [{ id: 1, title: 'Дюна: Часть вторая' }] });
-});
-
-
-// Запускаем сервер
-const start = async () => {
-  try {
-    await fastify.listen({ port: 3000, host: '0.0.0.0' }); // '0.0.0.0' важно для Docker
-    fastify.log.info(`Сервер запущен на порту ${fastify.server.address().port}`);
-  } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-};
-start();
-document.addEventListener('DOMContentLoaded', () => {
-    const moviesList = document.getElementById('movies-list');
-
-    fetch('/api/movies')
-        .then(response => response.json())
-        .then(data => {
-            moviesList.innerHTML = `<h2>${data.movies[0].title}</h2>`;
-        })
-        .catch(error => console.error('Ошибка при загрузке фильмов:', error));
-});

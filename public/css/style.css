@@ -90,10 +90,14 @@ main {
 }
 
 /* Сетка карточек фильмов (CSS Grid) */
+/* --- Сетка карточек фильмов (CSS Grid) --- */
 .movies-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Адаптивная сетка */
-    gap: 30px;
+    /* Ключевая строка: создает колонки шириной не меньше 280px, 
+       и заполняет ими всё доступное пространство */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+    gap: 30px; /* Расстояние между карточками (по вертикали и горизонтали) */
+    align-items: stretch; /* Карточки в одном ряду будут одинаковой высоты */
 }
 
 /* --- Карточка фильма --- */
@@ -101,7 +105,10 @@ main {
     background-color: var(--surface-color);
     border-radius: 10px;
     overflow: hidden;
+    display: flex;             /* ВАЖНО для правильного распределения внутри карточки */
+    flex-direction: column;    /* Постер сверху, информация снизу */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;              /* Карточка занимает всю высоту своей ячейки в сетке */
 }
 
 .movie-card:hover {
@@ -124,6 +131,7 @@ main {
     padding: 20px;
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
 }
 
 .movie-title {
@@ -302,4 +310,32 @@ main {
     font-size: 1.2rem;
     color: var(--text-muted);
 }
+.sessions-list {
+    display: flex;         /* Выстраиваем элементы в линию */
+    flex-wrap: wrap;       /* Разрешаем перенос на новую строку, если не влезают */
+    gap: 8px;              /* Расстояние между кнопками (отступы) */
+    margin-bottom: 20px;   /* Отступ снизу, перед кнопкой "Подробнее" */
+}
+
+/* Сама кнопка времени сеанса */
+.btn-session {
+    background-color: transparent;      /* Убираем темный фон */
+    color: var(--text-main);
+    border: 1px solid var(--text-muted); /* Тонкая серая рамка */
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;               /* Запрещаем перенос текста ВНУТРИ кнопки */
+}
+
+/* Красивый эффект при наведении */
+.btn-session:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
 

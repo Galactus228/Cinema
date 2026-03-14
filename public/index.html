@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кинотеатр "Дипломный"</title>
-    <!-- Подключаем современный шрифт -->
+    <link rel="icon" type="image/png" href="/cinema_12223.png"> 
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=2">
 </head>
 <body>
 
@@ -22,6 +22,7 @@
                         <span class="dropdown-trigger">Меню ▾</span>
                         <div class="dropdown-content">
                             <a href="/">Афиша</a>
+                            <a href="/schedule">Расписание</a>
                             <a href="/coming-soon">Скоро в кино</a>
                             <a href="/news">Новости</a>
                             <a href="/promotions">Акции и скидки</a>
@@ -39,25 +40,13 @@
 
 
     <main class="container">
-        <section class="movies-section">
-            <h1 class="section-title">Сейчас в кино</h1>
-            
-            <!-- Сюда с помощью JavaScript (app.js) будут добавляться фильмы -->
-            <div id="movies-list" class="movies-grid">
-                
-                <!-- Это пример карточки фильма для наглядности (потом будем генерировать их через JS) -->
-                <div class="movie-card">
-                    <div class="movie-poster">Постер</div>
-                    <div class="movie-info">
-                        <h3 class="movie-title">Дюна: Часть вторая</h3>
-                        <p class="movie-genre">Фантастика, боевик</p>
-                        <button class="btn-book">Купить билет</button>
-                    </div>
-                </div>
-                <!-- Конец примера карточки -->
-
-            </div>
-        </section>
+    <section class="movies-section">
+        <h1 class="section-title">Сейчас в кино</h1>
+        
+        <!-- Этот блок ДОЛЖЕН БЫТЬ ПУСТЫМ. JS заполнит его данными из API -->
+        <div id="movies-list" class="movies-grid"></div>
+        
+    </section>
     </main>
 
     <footer class="footer">
