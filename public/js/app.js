@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
         // ВАЖНО: используем путь /api/schedule, который выдает ваш JSON
-        const response = await fetch('/api/schedule');
+        const response = await fetch('/api/now-playing');
         const movies = await response.json();
         console.log("Данные от API получены:", movies);
 

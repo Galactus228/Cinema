@@ -18,7 +18,7 @@ fastify.register(require('@fastify/static'), {
 });
 
 // API для получения афиши и сеансов
-fastify.get('/api/schedule', async (request, reply) => {
+fastify.get('/api/now-playing', async (request, reply) => {
     try {
         const [rows] = await pool.query(`
             SELECT 
@@ -56,7 +56,49 @@ fastify.get('/api/schedule', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка базы данных' });
     }
 });
-
+// === НОВЫЙ API-МАРШРУТ ДЛЯ "СКОРО В КИНО" ===
+fastify.get('/api/coming-soon-movies', async (request, reply) => {
+    try {
+        // Выбираем фильмы, ID которых НЕТ в таблице сеансов
+        const [rows] = await pool.query(`
+            SELECT id, title, poster_url, genre, duration
+            FROM movies
+            WHERE id NOT IN (SELECT DISTINCT movie_id FROM sessions)
+            ORDER BY id DESC
+        `);
+        return rows;
+    } catch (err) {
+        fastify.log.error(err);
+        return reply.status(500).send({ error: 'Ошибка БД' });
+    }
+});
+// === НОВЫЙ API-МАРШРУТ ДЛЯ РАСПИСАНИЯ ===
+fastify.get('/api/schedule', async (request, reply) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT 
+                s.id as session_id,
+                s.start_time,
+                s.price,
+                h.name as hall_name,
+                m.title,
+                m.poster_url,
+                m.genre,
+                d.age_rating
+            FROM sessions s
+            JOIN movies m ON s.movie_id = m.id
+            JOIN halls h ON s.hall_id = h.id
+            LEFT JOIN movie_details d ON m.id = d.movie_id -- Используем LEFT JOIN, чтобы сеанс показался, даже если деталей фильма пока нет в базе
+            WHERE s.start_time > NOW()
+            ORDER BY s.start_time ASC -- Сортировка по времени начала (от ближайших)
+        `);
+        
+        return rows;
+    } catch (err) {
+        fastify.log.error(err);
+        return reply.status(500).send({ error: 'Ошибка при загрузке расписания' });
+    }
+});
 fastify.get('/', (req, reply) => reply.sendFile('index.html'));
 fastify.get('/about', (req, reply) => reply.sendFile('about.html'));
 fastify.get('/news', (req, reply) => reply.sendFile('news.html'));

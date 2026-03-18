@@ -1,0 +1,131 @@
+/* --- Стили для страницы расписания --- */
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.session-list-item {
+    background-color: var(--surface-color);
+    border-radius: 8px;
+    display: flex;
+    padding: 15px;
+    align-items: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.session-list-item:hover {
+    transform: translateX(5px); /* Легкое смещение вправо при наведении */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    border-left: 4px solid var(--primary-color);
+}
+
+.session-poster {
+    width: 80px;
+    height: 120px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 5px;
+    flex-shrink: 0;
+}
+
+.session-info {
+    flex-grow: 1;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.session-movie-title {
+    font-size: 1.3rem;
+    margin-bottom: 5px;
+}
+
+.session-meta {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.session-genre {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.session-age {
+    background-color: #333;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.session-details {
+    display: flex;
+    gap: 15px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.session-time-block {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    min-width: 150px;
+}
+
+.session-date {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+.session-time {
+    font-size: 2.5rem; /* Большие цифры времени! */
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+.btn-book-session {
+    background-color: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--primary-color);
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: 600;
+}
+
+.btn-book-session:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .session-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .session-info {
+        padding: 15px 0;
+    }
+    .session-time-block {
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .session-time {
+        font-size: 2rem;
+        margin-bottom: 0;
+    }
+}

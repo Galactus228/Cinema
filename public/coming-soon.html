@@ -32,9 +32,14 @@
     </header>
 
     <main class="container">
-        <section class="placeholder-section">
-            <h1 class="section-title">Скоро в кино</h1> <!-- Уникальный заголовок -->
-            <p>Этот раздел находится в разработке. Загляните сюда позже!</p>
+        <section class="movies-section"> <!-- Используем тот же класс секции, что и для Афиши -->
+            <h1 class="section-title">Скоро в кино</h1>
+            
+            <!-- Сюда JavaScript будет вставлять фильмы "Скоро в кино" -->
+            <div id="coming-soon-movies-list" class="movies-grid">
+                <!-- Заглушка, если JS не сработает -->
+                <p>Загрузка фильмов...</p>
+            </div>
         </section>
     </main>
 
@@ -43,5 +48,6 @@
             <p>&copy; 2024 Разработка информационной системы бронирования билетов</p>
         </div>
     </footer>
+    <script src="/js/coming-soon.js"></script>
 </body>
 </html>
