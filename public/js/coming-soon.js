@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <h3 class="movie-title">${movie.title}</h3>
                     <p class="movie-genre">${movie.genre ? movie.genre + ' •' : ''} ${movie.duration ? movie.duration + ' мин.' : ''}</p>
                     <!-- Здесь нет кнопок сеансов, только информация о фильме -->
-                    <button class="btn-book">Подробнее</button>
+                    <button class="btn-book" onclick="window.location.href='/movie?id=${movie.movie_id || movie.id}'">Подробнее</button>
                 </div>
             `;
             moviesGrid.appendChild(movieCard);

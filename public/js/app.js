@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="sessions-list">
                         ${sessionsHtml}
                     </div>
-                    <button class="btn-book">Подробнее</button>
+                    <button class="btn-book" onclick="window.location.href='/movie?id=${movie.id}'">Подробнее</button>
                 </div>
             `;
             moviesGrid.appendChild(movieCard);

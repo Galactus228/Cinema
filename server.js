@@ -7,10 +7,26 @@ const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || 'root_password',
-    database: process.env.DB_NAME || 'cinema_db'
+    database: process.env.DB_NAME || 'cinema_db',
+    dateStrings: true
 };
 
 let pool;
+
+// === ФУНКЦИЯ АВТООБНОВЛЕНИЯ ДАТ СЕАНСОВ ===
+// Она переносит все вчерашние (и более старые) сеансы на сегодня, сохраняя время
+async function refreshSessionDates() {
+    try {
+        await pool.query(`
+            UPDATE sessions 
+            SET start_time = CONCAT(DATE(DATE_ADD(NOW(), INTERVAL 3 HOUR)), ' ', TIME(start_time))
+            WHERE DATE(start_time) < DATE(DATE_ADD(NOW(), INTERVAL 3 HOUR))
+        `);
+    } catch (err) {
+        console.error("Ошибка при автообновлении дат:", err);
+    }
+}
+
 
 fastify.register(require('@fastify/static'), {
     root: path.join(__dirname, 'public'),
@@ -20,6 +36,7 @@ fastify.register(require('@fastify/static'), {
 // API для получения афиши и сеансов
 fastify.get('/api/now-playing', async (request, reply) => {
     try {
+        await refreshSessionDates();
         const [rows] = await pool.query(`
             SELECT 
                 m.id as movie_id, m.title, m.poster_url, m.genre, m.duration,
@@ -34,6 +51,7 @@ fastify.get('/api/now-playing', async (request, reply) => {
         const schedule = rows.reduce((acc, row) => {
             if (!acc[row.movie_id]) {
                 acc[row.movie_id] = {
+                    id: row.movie_id,
                     title: row.title,
                     poster: row.poster_url,
                     genre: row.genre,
@@ -75,9 +93,11 @@ fastify.get('/api/coming-soon-movies', async (request, reply) => {
 // === НОВЫЙ API-МАРШРУТ ДЛЯ РАСПИСАНИЯ ===
 fastify.get('/api/schedule', async (request, reply) => {
     try {
+        await refreshSessionDates();
         const [rows] = await pool.query(`
             SELECT 
                 s.id as session_id,
+                m.id as movie_id,
                 s.start_time,
                 s.price,
                 h.name as hall_name,
@@ -89,7 +109,7 @@ fastify.get('/api/schedule', async (request, reply) => {
             JOIN movies m ON s.movie_id = m.id
             JOIN halls h ON s.hall_id = h.id
             LEFT JOIN movie_details d ON m.id = d.movie_id -- Используем LEFT JOIN, чтобы сеанс показался, даже если деталей фильма пока нет в базе
-            WHERE s.start_time > NOW()
+            WHERE s.start_time > DATE_ADD(NOW(), INTERVAL 3 HOUR)
             ORDER BY s.start_time ASC -- Сортировка по времени начала (от ближайших)
         `);
         
@@ -99,12 +119,37 @@ fastify.get('/api/schedule', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка при загрузке расписания' });
     }
 });
+// API для получения данных одного фильма по ID
+fastify.get('/api/movie/:id', async (request, reply) => {
+    const { id } = request.params;
+    try {
+        const [rows] = await pool.query(`
+            SELECT m.*, d.age_rating, d.premiere_date, d.country, d.synopsis, d.actors, d.director
+            FROM movies m
+            LEFT JOIN movie_details d ON m.id = d.movie_id
+            WHERE m.id = ?
+        `, [id]);
+
+        if (rows.length === 0) {
+            return reply.status(404).send({ error: 'Фильм не найден' });
+        }
+
+        return rows[0];
+    } catch (err) {
+        fastify.log.error(err);
+        return reply.status(500).send({ error: 'Ошибка сервера' });
+    }
+});
 fastify.get('/', (req, reply) => reply.sendFile('index.html'));
 fastify.get('/about', (req, reply) => reply.sendFile('about.html'));
 fastify.get('/news', (req, reply) => reply.sendFile('news.html'));
 fastify.get('/coming-soon', (req, reply) => reply.sendFile('coming-soon.html'));
 fastify.get('/promotions', (req, reply) => reply.sendFile('promotions.html'));
 fastify.get('/schedule', (req, reply) => reply.sendFile('schedule.html'));
+// Роут для самой страницы фильма
+fastify.get('/movie', (req, reply) => {
+    reply.sendFile('movie.html');
+});
 const start = async () => {
     try {
         pool = await mysql.createPool(dbConfig);

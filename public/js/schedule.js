@@ -13,33 +13,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         sessions.forEach(session => {
-            const date = new Date(session.start_time);
-            const timeString = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            // Форматируем дату для отображения (например, "15 мая")
-            const dateString = date.toLocaleDateString('ru-RU', { month: 'long', day: 'numeric' });
+            // Берем только время "18:30"
+            const timeString = session.start_time.split(' ')[1].substring(0, 5); 
 
             const sessionCard = document.createElement('div');
-            sessionCard.className = 'session-list-item';
+            sessionCard.className = 'session-list-item'; // Тот самый скругленный квадрат
 
             sessionCard.innerHTML = `
-                <div class="session-poster" style="background-image: url('${session.poster_url}')"></div>
+                <!-- Время по центру слева -->
+                <div class="session-time">${timeString}</div>
                 
+                <!-- Информация по центру (название сверху, детали снизу) -->
                 <div class="session-info">
                     <h3 class="session-movie-title">${session.title}</h3>
                     <div class="session-meta">
                         <span class="session-genre">${session.genre}</span>
                         ${session.age_rating ? `<span class="session-age">${session.age_rating}</span>` : ''}
-                    </div>
-                    <div class="session-details">
-                        <span>📍 ${session.hall_name}</span>
-                        <span>💵 ${session.price} ₽</span>
+                        <span>Зал: ${session.hall_name}</span>
+                        <span class="session-price">${session.price} руб</span>
                     </div>
                 </div>
                 
-                <div class="session-time-block">
-                    <div class="session-date">${dateString}</div>
-                    <div class="session-time">${timeString}</div>
-                    <button class="btn-book-session" data-id="${session.session_id}">Выбрать места</button>
+                <!-- Кнопка справа -->
+                <div class="session-action">
+                    <button class="btn-book-session" onclick="window.location.href='/movie?id=${session.movie_id}'">Подробнее</button>
                 </div>
             `;
 
@@ -51,3 +48,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         scheduleList.innerHTML = '<p style="color: red;">Ошибка при загрузке расписания.</p>';
     }
 });
+

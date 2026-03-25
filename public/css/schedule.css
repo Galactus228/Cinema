@@ -1,131 +1,112 @@
-/* --- Стили для страницы расписания --- */
+/* --- Сетка расписания --- */
 .schedule-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px; /* Расстояние между карточками */
 }
 
+/* --- Карточка сеанса (скругленный квадрат как на афише) --- */
 .session-list-item {
-    background-color: var(--surface-color);
-    border-radius: 8px;
+    background-color: var(--surface-color); /* Темно-серый фон карточки */
+    border-radius: 10px; /* Такое же скругление, как у фильмов */
     display: flex;
-    padding: 15px;
-    align-items: center;
+    align-items: center; /* ВАЖНО: Выравнивает всё по вертикали ровно по центру */
+    padding: 25px 30px;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .session-list-item:hover {
-    transform: translateX(5px); /* Легкое смещение вправо при наведении */
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    border-left: 4px solid var(--primary-color);
+    transform: translateY(-3px); /* Легкое поднятие при наведении */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
 }
 
-.session-poster {
-    width: 80px;
-    height: 120px;
-    background-size: cover;
-    background-position: center;
-    border-radius: 5px;
-    flex-shrink: 0;
-}
-
-.session-info {
-    flex-grow: 1;
-    padding: 0 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.session-movie-title {
-    font-size: 1.3rem;
-    margin-bottom: 5px;
-}
-
-.session-meta {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.session-genre {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-}
-
-.session-age {
-    background-color: #333;
-    color: white;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: bold;
-}
-
-.session-details {
-    display: flex;
-    gap: 15px;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-}
-
-.session-time-block {
-    text-align: right;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: center;
-    min-width: 150px;
-}
-
-.session-date {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    margin-bottom: 2px;
-}
-
+/* --- Огромное время слева --- */
 .session-time {
-    font-size: 2.5rem; /* Большие цифры времени! */
+    font-size: 2.5rem; /* Очень крупный шрифт */
     font-weight: 700;
     color: var(--primary-color);
     line-height: 1;
-    margin-bottom: 10px;
+    min-width: 120px; /* Фиксированная ширина, чтобы названия фильмов начинались на одном уровне */
 }
 
+/* --- Блок с названием и описанием (Центр) --- */
+.session-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Забирает всё свободное пространство */
+    gap: 8px; /* Расстояние между названием и описанием */
+}
+
+.session-movie-title {
+    font-size: 1.5rem;
+    color: var(--text-main);
+    margin: 0;
+    font-weight: 600;
+}
+
+/* Строка с описанием (жанр, рейтинг, зал, цена) */
+.session-meta {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Расстояние между элементами в строке */
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.session-age {
+    background-color: rgba(255, 255, 255, 0.1); /* Полупрозрачный фон для рейтинга */
+    color: var(--text-main);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.session-price {
+    font-weight: 700;
+    color: var(--text-main); /* Белый цвет для цены, чтобы выделялась */
+}
+
+/* --- Кнопка справа --- */
 .btn-book-session {
     background-color: transparent;
     color: var(--text-main);
-    border: 1px solid var(--primary-color);
-    padding: 8px 15px;
-    border-radius: 4px;
+    border: 2px solid var(--primary-color);
+    padding: 10px 20px;
+    border-radius: 5px;
     cursor: pointer;
-    transition: 0.3s;
+    transition: all 0.3s ease;
     font-weight: 600;
+    font-family: inherit;
+    font-size: 1rem;
+    white-space: nowrap; /* Чтобы текст в кнопке не переносился на две строки */
 }
 
 .btn-book-session:hover {
     background-color: var(--primary-color);
     color: white;
+    box-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
 }
 
-/* Адаптивность для мобильных устройств */
+/* --- Адаптивность для мобильных устройств --- */
 @media (max-width: 768px) {
     .session-list-item {
         flex-direction: column;
         align-items: flex-start;
-    }
-    .session-info {
-        padding: 15px 0;
-    }
-    .session-time-block {
-        width: 100%;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
+        padding: 20px;
+        gap: 15px;
     }
     .session-time {
-        font-size: 2rem;
-        margin-bottom: 0;
+        font-size: 2.5rem;
+    }
+    .session-meta {
+        flex-wrap: wrap; /* Разрешаем перенос тегов на телефонах */
+        gap: 10px;
+    }
+    .session-action {
+        width: 100%;
+    }
+    .btn-book-session {
+        width: 100%; /* Кнопка на всю ширину на мобилке */
     }
 }

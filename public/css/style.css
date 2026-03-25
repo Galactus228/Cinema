@@ -337,5 +337,83 @@ main {
     border-color: var(--primary-color);
     color: white;
 }
+/* --- Улучшенный футер --- */
+.footer-enhanced {
+    background-color: #0a0a0a; /* Чуть светлее, чем основной черный фон */
+    color: var(--text-muted);
+    padding: 60px 0 0; /* Большой отступ сверху, ноль снизу */
+    margin-top: 50px;
+    border-top: 1px solid #222;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap; /* Для адаптивности на мобильных */
+    gap: 30px; /* Расстояние между колонками */
+    margin-bottom: 40px;
+}
+
+.footer-column {
+    flex: 1; /* Колонки стараются занять равное пространство */
+    min-width: 220px; /* Минимальная ширина колонки */
+}
+
+.footer-logo {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+
+.footer-column.about-us p {
+    font-size: 0.9rem;
+    line-height: 1.7;
+}
+
+.footer-heading {
+    font-size: 1.2rem;
+    color: var(--text-main);
+    margin-bottom: 20px;
+    position: relative;
+}
+
+/* Декоративная линия под заголовками */
+.footer-heading::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -5px;
+    width: 30px;
+    height: 2px;
+    background-color: var(--primary-color);
+}
+
+.footer-column ul {
+    list-style: none; /* Убираем маркеры списка */
+}
+
+.footer-column ul li {
+    margin-bottom: 12px;
+}
+
+.footer-column ul li a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s, padding-left 0.3s;
+}
+
+.footer-column ul li a:hover {
+    color: var(--primary-color);
+    padding-left: 5px; /* Легкий сдвиг при наведении */
+}
+
+/* Нижняя полоса с копирайтом */
+.footer-bottom {
+    border-top: 1px solid #222;
+    text-align: center;
+    padding: 20px 0;
+    font-size: 0.85rem;
+}
 
 

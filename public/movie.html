@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>О фильме - КиноДиплом</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .movie-detail-container { padding: 40px 0; display: flex; gap: 40px; }
+        .movie-big-poster { width: 350px; height: 500px; border-radius: 15px; background-size: cover; background-position: center; flex-shrink: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .movie-full-info { flex-grow: 1; }
+        .movie-full-title { font-size: 3rem; margin-bottom: 10px; color: var(--text-main); }
+        .movie-tags { display: flex; gap: 15px; margin-bottom: 30px; color: var(--primary-color); font-weight: 600; }
+        .info-grid { display: grid; grid-template-columns: 150px 1fr; gap: 15px; margin-bottom: 30px; }
+        .info-label { color: var(--text-muted); font-weight: 600; }
+        .movie-synopsis { line-height: 1.8; font-size: 1.1rem; color: #ddd; margin-bottom: 30px; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; }
+        .btn-buy-large { background: var(--primary-color); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .btn-buy-large:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(229,9,20,0.5); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo" onclick="window.location.href='/'">🎬 КиноДиплом</div>
+            <nav class="nav"><a href="/">Вернуться к афише</a></nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="movie-content" class="movie-detail-container">
+            <!-- Данные загрузятся через JS -->
+            <p>Загрузка информации о фильме...</p>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const movieId = params.get('id');
+            const content = document.getElementById('movie-content');
+
+            try {
+                const res = await fetch(`/api/movie/${movieId}`);
+                const movie = await res.json();
+
+                document.title = `${movie.title} - КиноДиплом`;
+
+                content.innerHTML = `
+                    <div class="movie-big-poster" style="background-image: url('${movie.poster_url}')"></div>
+                    <div class="movie-full-info">
+                        <h1 class="movie-full-title">${movie.title}</h1>
+                        <div class="movie-tags">
+                            <span>${movie.genre}</span>
+                            <span>${movie.age_rating || '6+'}</span>
+                            <span>${movie.duration} мин.</span>
+                        </div>
+                        
+                        <div class="info-grid">
+                            <div class="info-label">Страна</div><div>${movie.country || 'Не указана'}</div>
+                            <div class="info-label">Режиссер</div><div>${movie.director || 'Не указан'}</div>
+                            <div class="info-label">В ролях</div><div>${movie.actors || 'Информация отсутствует'}</div>
+                            <div class="info-label">Премьера</div><div>${movie.premiere_date ? new Date(movie.premiere_date).toLocaleDateString('ru-RU') : 'Скоро'}</div>
+                        </div>
+
+                        <div class="movie-synopsis">${movie.synopsis || 'Описание фильма скоро появится.'}</div>
+                        
+                        <button class="btn-buy-large" onclick="window.location.href='/schedule'">Купить билет</button>
+                    </div>
+                `;
+            } catch (err) {
+                content.innerHTML = '<h2>Ошибка загрузки фильма</h2>';
+            }
+        });
+    </script>
+</body>
+</html>
