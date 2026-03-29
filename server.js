@@ -1,7 +1,21 @@
+const bcrypt = require('bcryptjs'); // Для хэширования паролей
+const fastifyJwt = require('@fastify/jwt'); // Для токенов авторизации
 const path = require('path');
 const mysql = require('mysql2/promise');
 const fastify = require('fastify')({ logger: true });
 
+// Инициализация JWT
+fastify.register(fastifyJwt, {
+    secret: 'super_secret_diploma_key_12345' // Надежный секретный ключ
+});
+
+fastify.decorate("authenticate", async function(request, reply) {
+    try {
+        await request.jwtVerify();
+    } catch (err) {
+        reply.send(err);
+    }
+});
 // Настройки подключения к БД (берем из переменных окружения Docker)
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
@@ -119,6 +133,96 @@ fastify.get('/api/schedule', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка при загрузке расписания' });
     }
 });
+// API: РЕГИСТРАЦИЯ ПОЛЬЗОВАТЕЛЯ
+fastify.post('/api/register', async (request, reply) => {
+    const { name, email, password } = request.body;
+
+    try {
+        // 1. Проверяем, не занят ли email
+        const [existingUsers] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+        if (existingUsers.length > 0) {
+            return reply.status(400).send({ error: 'Пользователь с таким email уже существует' });
+        }
+
+        // 2. Хэшируем (шифруем) пароль
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        // 3. Сохраняем в базу
+        const [result] = await pool.query(
+            'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
+            [name, email, hashedPassword]
+        );
+
+        // 4. Создаем JWT токен, чтобы сразу "залогинить" пользователя
+        const token = fastify.jwt.sign({ userId: result.insertId, name: name, email: email });
+
+        return reply.status(201).send({ message: 'Регистрация успешна', token: token, name: name });
+
+    } catch (err) {
+        fastify.log.error(err);
+        return reply.status(500).send({ error: 'Ошибка сервера при регистрации' });
+    }
+});
+// API: ВХОД ПОЛЬЗОВАТЕЛЯ
+fastify.post('/api/login', async (request, reply) => {
+    const { email, password } = request.body;
+
+    try {
+        // 1. Ищем пользователя по email
+        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+        const user = users[0];
+
+        if (!user) {
+            return reply.status(401).send({ error: 'Неверный email или пароль' });
+        }
+
+        // 2. Сравниваем введенный пароль с хэшем в базе
+        const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+
+        if (!isPasswordValid) {
+            return reply.status(401).send({ error: 'Неверный email или пароль' });
+        }
+
+        // 3. Если всё верно — выдаем токен
+        const token = fastify.jwt.sign({ userId: user.id, name: user.name, email: user.email });
+
+        return reply.send({ message: 'Вход выполнен', token: token, name: user.name });
+
+    } catch (err) {
+        fastify.log.error(err);
+        return reply.status(500).send({ error: 'Ошибка сервера при авторизации' });
+    }
+});
+// API: ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ (ЗАЩИЩЕННЫЙ)
+fastify.get('/api/profile', {
+    preHandler: [fastify.authenticate] // Эта строка делает роут защищенным!
+}, async (request, reply) => {
+    try {
+        // request.user содержит данные, которые мы зашифровали в токене (userId, name, email)
+        const userId = request.user.userId;
+
+        // Достаем email из базы (на случай, если он изменился, хотя в токене он тоже есть)
+        const [users] = await pool.query('SELECT email FROM users WHERE id = ?', [userId]);
+
+        if (users.length === 0) {
+            return reply.status(404).send({ error: 'Пользователь не найден' });
+        }
+        
+        // В будущем мы здесь будем подтягивать и историю билетов
+        // const [bookings] = await pool.query('SELECT * FROM bookings WHERE user_id = ?', [userId]);
+
+        return reply.send({
+            name: request.user.name,
+            email: users[0].email,
+            bookings: [] // Пока возвращаем пустой массив билетов
+        });
+
+    } catch (err) {
+        fastify.log.error(err);
+        return reply.status(500).send({ error: 'Ошибка сервера' });
+    }
+});
 // API для получения данных одного фильма по ID
 fastify.get('/api/movie/:id', async (request, reply) => {
     const { id } = request.params;
@@ -146,6 +250,11 @@ fastify.get('/news', (req, reply) => reply.sendFile('news.html'));
 fastify.get('/coming-soon', (req, reply) => reply.sendFile('coming-soon.html'));
 fastify.get('/promotions', (req, reply) => reply.sendFile('promotions.html'));
 fastify.get('/schedule', (req, reply) => reply.sendFile('schedule.html'));
+// Роут для страницы профиля
+fastify.get('/profile', (req, reply) => {
+    reply.sendFile('profile.html');
+});
+
 // Роут для самой страницы фильма
 fastify.get('/movie', (req, reply) => {
     reply.sendFile('movie.html');

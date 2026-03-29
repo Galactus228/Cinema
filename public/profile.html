@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой профиль - КиноДиплом</title>
+    <link rel="icon" type="image/png" href="/cinema_12223.png">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* Стили для страницы профиля */
+        .profile-container { padding: 40px 0; }
+        .profile-card { background-color: var(--surface-color); padding: 40px; border-radius: 10px; max-width: 800px; margin: 0 auto; text-align: center; }
+        .profile-card-header { display: flex; flex-direction: column; align-items: center; gap: 20px; margin-bottom: 30px; }
+        .profile-avatar-large { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid var(--primary-color); }
+        .profile-name { font-size: 2rem; color: var(--text-main); }
+        .profile-email { color: var(--text-muted); }
+        .profile-section { margin-top: 40px; text-align: left; }
+        .profile-section h3 { font-size: 1.5rem; color: var(--primary-color); border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .ticket-history-placeholder { color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo" onclick="window.location.href='/'">🎬 КиноДиплом</div>
+            <div class="header-right">
+                <!-- Сюда auth.js вставит аватарку и кнопку "Выйти" -->
+                <button class="btn-login">Вернуться к афише</button> 
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="profile-content" class="profile-container">
+            <!-- Сюда JS вставит данные профиля -->
+            <p>Загрузка данных профиля...</p>
+        </div>
+    </main>
+    
+    <script src="/js/auth.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const profileContent = document.getElementById('profile-content');
+        const token = localStorage.getItem('jwtToken'); // Получаем токен из хранилища
+
+        // Если токена нет - пользователь не авторизован, выкидываем на главную
+        if (!token) {
+            window.location.href = '/';
+            return;
+        }
+
+        try {
+            // ДЕЛАЕМ ЗАПРОС К ЗАЩИЩЕННОМУ API
+            const response = await fetch('/api/profile', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}` // <--- ВАЖНО: Отправляем токен в заголовке!
+                }
+            });
+            
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Если токен невалидный или истек, сервер вернет ошибку
+                throw new Error(data.message || 'Ошибка авторизации');
+            }
+
+            // Если всё успешно, отрисовываем карточку с реальными данными
+            profileContent.innerHTML = `
+                <div class="profile-card">
+                    <div class="profile-card-header">
+                        <img src="/images/default-avatar.png" alt="Аватар" class="profile-avatar-large">
+                        <div>
+                            <h2 class="profile-name">${data.name}</h2>
+                            <p class="profile-email">${data.email}</p> <!-- Используем email с сервера -->
+                        </div>
+                    </div>
+                    <div class="profile-section">
+                        <h3>История покупок</h3>
+                        ${data.bookings.length > 0 
+                            ? '<div>Здесь будет список билетов...</div>' 
+                            : '<p class="ticket-history-placeholder">У вас пока нет купленных билетов.</p>'
+                        }
+                    </div>
+                </div>
+            `;
+        } catch (err) {
+            console.error("Ошибка получения профиля:", err);
+            // Если токен "протух", чистим хранилище и перезагружаемся
+            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('userName');
+            window.location.href = '/';
+        }
+    });
+    </script>
+</body>
+</html>

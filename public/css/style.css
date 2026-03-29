@@ -415,5 +415,156 @@ main {
     padding: 20px 0;
     font-size: 0.85rem;
 }
+/* --- Стили для модального окна авторизации --- */
+.modal-overlay {
+    display: none; /* Скрыто по умолчанию */
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: var(--surface-color);
+    padding: 40px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+    text-align: center;
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px; right: 20px;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.close-modal:hover { color: var(--primary-color); }
+
+.modal-content h2 { margin-bottom: 25px; color: var(--text-main); }
+
+.modal-content input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    background-color: #333;
+    border: 1px solid #444;
+    color: white;
+    border-radius: 5px;
+    font-family: inherit;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-primary:hover { background-color: var(--primary-hover); }
+
+.auth-switch {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.auth-switch a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.error-msg {
+    color: #ff4d4d;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    display: none; /* Скрываем сообщение об ошибке */
+}
+/* --- Стили для глазка пароля --- */
+.password-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+/* Убираем margin-bottom у самого input, так как он теперь у wrapper */
+.password-wrapper input {
+    margin-bottom: 0;
+    padding-right: 40px; /* Оставляем место для глазка */
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    filter: grayscale(1) opacity(0.5); /* Делаем глазок тусклым по умолчанию */
+    transition: 0.3s;
+    user-select: none; /* Запрещаем выделение текста */
+}
+
+.toggle-password:hover {
+    filter: grayscale(0) opacity(1); /* Делаем ярче при наведении */
+}
+/* --- Стили для залогиненного пользователя --- */
+.user-greeting {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.logout-link {
+    background-color: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--text-muted);
+    padding: 8px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.logout-link:hover {
+    color: white;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+/* --- Стили для аватарки в шапке --- */
+.profile-avatar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text-main);
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 20px;
+    transition: background-color 0.3s;
+}
+
+.profile-avatar:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.profile-avatar img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%; /* Делаем картинку круглой */
+    object-fit: cover;
+    border: 2px solid var(--primary-color);
+}
 
 
