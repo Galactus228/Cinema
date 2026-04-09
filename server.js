@@ -1,12 +1,24 @@
 const bcrypt = require('bcryptjs'); // Для хэширования паролей
 const fastifyJwt = require('@fastify/jwt'); // Для токенов авторизации
 const path = require('path');
+const fs = require('fs'); // Для работы с файловой системой
+const { pipeline } = require('stream'); // Для эффективной обработки потоков
+const util = require('util'); // Для promisy-фикации pipeline
+
+const pump = util.promisify(pipeline);
 const mysql = require('mysql2/promise');
 const fastify = require('fastify')({ logger: true });
 
 // Инициализация JWT
 fastify.register(fastifyJwt, {
     secret: 'super_secret_diploma_key_12345' // Надежный секретный ключ
+});
+
+// Регистрация плагина для загрузки файлов (multipart/form-data)
+fastify.register(require('@fastify/multipart'), {
+    limits: {
+        fileSize: 5 * 1024 * 1024, // Максимальный размер файла 5MB
+    }
 });
 
 fastify.decorate("authenticate", async function(request, reply) {
@@ -16,6 +28,18 @@ fastify.decorate("authenticate", async function(request, reply) {
         reply.send(err);
     }
 });
+
+// 1. Гарантируем, что папка uploads существует (чтобы при загрузке не было ошибки)
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+fastify.register(require('@fastify/static'), {
+    root: path.join(__dirname, 'public'),
+    prefix: '/'
+});
+
 // Настройки подключения к БД (берем из переменных окружения Docker)
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
@@ -40,12 +64,6 @@ async function refreshSessionDates() {
         console.error("Ошибка при автообновлении дат:", err);
     }
 }
-
-
-fastify.register(require('@fastify/static'), {
-    root: path.join(__dirname, 'public'),
-    prefix: '/',
-});
 
 // API для получения афиши и сеансов
 fastify.get('/api/now-playing', async (request, reply) => {
@@ -155,9 +173,9 @@ fastify.post('/api/register', async (request, reply) => {
         );
 
         // 4. Создаем JWT токен, чтобы сразу "залогинить" пользователя
-        const token = fastify.jwt.sign({ userId: result.insertId, name: name, email: email });
+        const token = fastify.jwt.sign({ userId: result.insertId, name: name, email: email, avatar_url: null });
 
-        return reply.status(201).send({ message: 'Регистрация успешна', token: token, name: name });
+        return reply.status(201).send({ message: 'Регистрация успешна', token: token, name: name, avatar_url: null });
 
     } catch (err) {
         fastify.log.error(err);
@@ -185,9 +203,9 @@ fastify.post('/api/login', async (request, reply) => {
         }
 
         // 3. Если всё верно — выдаем токен
-        const token = fastify.jwt.sign({ userId: user.id, name: user.name, email: user.email });
+        const token = fastify.jwt.sign({ userId: user.id, name: user.name, email: user.email, avatar_url: user.avatar_url });
 
-        return reply.send({ message: 'Вход выполнен', token: token, name: user.name });
+        return reply.send({ message: 'Вход выполнен', token: token, name: user.name, avatar_url: user.avatar_url });
 
     } catch (err) {
         fastify.log.error(err);
@@ -203,7 +221,7 @@ fastify.get('/api/profile', {
         const userId = request.user.userId;
 
         // Достаем email из базы (на случай, если он изменился, хотя в токене он тоже есть)
-        const [users] = await pool.query('SELECT email FROM users WHERE id = ?', [userId]);
+        const [users] = await pool.query('SELECT email, avatar_url FROM users WHERE id = ?', [userId]);
 
         if (users.length === 0) {
             return reply.status(404).send({ error: 'Пользователь не найден' });
@@ -215,12 +233,62 @@ fastify.get('/api/profile', {
         return reply.send({
             name: request.user.name,
             email: users[0].email,
+            avatar_url: users[0].avatar_url,
             bookings: [] // Пока возвращаем пустой массив билетов
         });
 
     } catch (err) {
         fastify.log.error(err);
         return reply.status(500).send({ error: 'Ошибка сервера' });
+    }
+});
+// API: Загрузка и обновление аватарки пользователя (защищенный)
+fastify.post('/api/profile/avatar', {
+    preHandler: [fastify.authenticate], // Защищаем маршрут
+    // Удаляем секцию schema, так как она конфликтует с multipart/form-data
+    // schema: {
+    //     body: {
+    //         type: 'object',
+    //         properties: {
+    //             avatar: { type: 'string', format: 'binary' }
+    //         },
+    //         required: ['avatar']
+    //     }
+    // }
+}, async (request, reply) => {
+    const userId = request.user.userId;
+    // Проверяем, что запрос действительно multipart
+    if (!request.isMultipart()) {
+        return reply.status(400).send({ error: 'Запрос должен быть multipart/form-data' });
+    }
+    try {
+        const data = await request.file(); // Получаем данные файла
+        if (!data || !data.file) {
+            return reply.status(400).send({ error: 'Файл не загружен' });
+        }
+        // Проверяем тип файла
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowedMimeTypes.includes(data.mimetype)) {
+            return reply.status(400).send({ error: 'Разрешены только изображения (JPEG, PNG, WebP)' });
+        }
+        // Генерируем уникальное имя файла
+        const filename = `${userId}-${Date.now()}${path.extname(data.filename)}`;
+        const filePath = path.join(uploadsDir, filename);
+        const publicUrl = `/uploads/${filename}`; // URL, который будет храниться в БД
+        // Сохраняем файл на диск
+        await pump(data.file, fs.createWriteStream(filePath));
+        // Обновляем avatar_url в базе данных
+        await pool.query('UPDATE users SET avatar_url = ? WHERE id = ?', [publicUrl, userId]);
+        // Обновляем JWT токен с новой аватаркой
+        const newToken = fastify.jwt.sign({ ...request.user, avatar_url: publicUrl });
+        return reply.send({
+            message: 'Аватар обновлен',
+            avatar_url: publicUrl,
+            token: newToken // Отправляем новый токен с обновленной аватаркой
+        });
+    } catch (err) {
+        fastify.log.error(err);
+        return reply.status(500).send({ error: `Ошибка при загрузке аватарки: ${err.message}` });
     }
 });
 // API для получения данных одного фильма по ID

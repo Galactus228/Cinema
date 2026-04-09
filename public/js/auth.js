@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Если всё успешно:
-            saveAuthData(data.token, data.name);
+            saveAuthData(data.token, data.name, data.avatar_url);
             updateUIForLoggedInUser(data.name);
             modal.style.display = 'none'; // Закрываем окно
 
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(data.error || 'Ошибка входа');
             }
 
-            saveAuthData(data.token, data.name);
+            saveAuthData(data.token, data.name, data.avatar_url);
             updateUIForLoggedInUser(data.name);
             modal.style.display = 'none';
 
@@ -96,44 +96,55 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Функция сохранения данных в браузере ---
-    function saveAuthData(token, name) {
-        localStorage.setItem('jwtToken', token); // Храним токен
-        localStorage.setItem('userName', name);   // Храним имя
+    function saveAuthData(token, name, avatarUrl = null) { // Добавляем avatarUrl
+    localStorage.setItem('jwtToken', token);
+    localStorage.setItem('userName', name);
+    localStorage.setItem('userAvatarUrl', avatarUrl); // <--- Сохраняем URL аватарки
     }
 
-   // --- Функция обновления интерфейса для залогиненного юзера ---
+
+    // --- Функция обновления интерфейса для залогиненного юзера ---
     function updateUIForLoggedInUser(name) {
     loginBtns.forEach(btn => {
-        const parent = btn.parentElement; // Находим .header-right
+        const parent = btn.parentElement;
+        const userAvatarUrl = localStorage.getItem('userAvatarUrl') || '/images/default-avatar.png'; // Берем из localStorage
         
-        // Создаем HTML-код для аватарки и кнопки "Выйти"
         parent.innerHTML = `
             <a href="/profile" class="profile-avatar" title="Перейти в профиль">
-                <img src="/images/default-avatar.png" alt="Аватар">
+                <img src="${userAvatarUrl}" alt="Аватар"> <!-- Используем userAvatarUrl -->
                 <span>${name}</span>
             </a>
             <a href="#" id="logout-link" class="logout-link">Выйти</a>
         `;
-
-        // Добавляем обработчик для новой кнопки "Выйти"
-        document.getElementById('logout-link').addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('jwtToken');
-            localStorage.removeItem('userName');
-            window.location.reload(); // Перезагружаем страницу, чтобы вернуть исходный UI
-        });
+        const logoutLink = document.getElementById('logout-link');
+            if (logoutLink) { // Убеждаемся, что элемент существует
+                logoutLink.addEventListener('click', (e) => {
+                    e.preventDefault(); // Предотвращаем переход по ссылке #
+                    localStorage.removeItem('jwtToken');
+                    localStorage.removeItem('userName');
+                    localStorage.removeItem('userAvatarUrl');
+                    // Перезагружаем страницу или перенаправляем на главную
+                    window.location.href = '/';
+                });
+            }
+        // ... (обработчик logout-link остается без изменений) ...
     });
     }
 
 
+
     // --- Проверка при загрузке страницы ---
     // Если в браузере уже есть токен, сразу меняем UI
+    // ...
     const storedToken = localStorage.getItem('jwtToken');
     const storedName = localStorage.getItem('userName');
+    const storedAvatarUrl = localStorage.getItem('userAvatarUrl'); // <--- Получаем URL
+
     if (storedToken && storedName) {
-        updateUIForLoggedInUser(storedName);
+    updateUIForLoggedInUser(storedName);
     }
-});
+
+    });
 
 // Глобальная функция для глазка пароля (оставляем без изменений)
 window.togglePasswordVisibility = function(inputId) {
