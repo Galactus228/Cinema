@@ -16,6 +16,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginErrorMsg = document.getElementById('login-error');
     const regErrorMsg = document.getElementById('reg-error');
 
+    // Находим элементы ПЕРЕД тем как вешать события
+    const logoutBtn = document.getElementById('logout-link');
+    const profileBtn = document.getElementById('go-to-profile');
+
+    if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.clear();
+        window.location.href = '/';
+    });
+    }
+
+    if (profileBtn) {
+    profileBtn.addEventListener('click', () => {
+        window.location.href = '/profile';
+    });
+    }
     // --- Управление UI (открытие, закрытие, переключение) ---
     loginBtns.forEach(btn => {
         btn.addEventListener('click', () => modal.style.display = 'flex');
@@ -104,32 +121,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Функция обновления интерфейса для залогиненного юзера ---
-    function updateUIForLoggedInUser(name) {
-    loginBtns.forEach(btn => {
-        const parent = btn.parentElement;
-        const userAvatarUrl = localStorage.getItem('userAvatarUrl') || '/images/default-avatar.png'; // Берем из localStorage
-        
-        parent.innerHTML = `
-            <a href="/profile" class="profile-avatar" title="Перейти в профиль">
-                <img src="${userAvatarUrl}" alt="Аватар"> <!-- Используем userAvatarUrl -->
-                <span>${name}</span>
-            </a>
-            <a href="#" id="logout-link" class="logout-link">Выйти</a>
+    function updateUIForLoggedInUser(userName) {
+    const headerRight = document.querySelector('.header-right');
+    if (!headerRight) return;
+
+    const avatarUrl = localStorage.getItem('userAvatarUrl') || '/default-avatar.png';
+    const loginBtn = headerRight.querySelector('.btn-login');
+    if (loginBtn) loginBtn.remove();
+
+    if (!headerRight.querySelector('.user-profile-block')) {
+        const userBlock = document.createElement('div');
+        userBlock.className = 'user-profile-block';
+        userBlock.style.display = 'flex';
+        userBlock.style.alignItems = 'center';
+        userBlock.style.gap = '15px';
+
+        userBlock.innerHTML = `
+            <div class="profile-avatar" id="go-to-profile" style="cursor:pointer;">
+                <img src="${avatarUrl}" alt="Avatar" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--primary-color); object-fit: cover;">
+            </div>
+            <a href="#" class="logout-link" id="logout-link">Выйти</a>
         `;
-        const logoutLink = document.getElementById('logout-link');
-            if (logoutLink) { // Убеждаемся, что элемент существует
-                logoutLink.addEventListener('click', (e) => {
-                    e.preventDefault(); // Предотвращаем переход по ссылке #
-                    localStorage.removeItem('jwtToken');
-                    localStorage.removeItem('userName');
-                    localStorage.removeItem('userAvatarUrl');
-                    // Перезагружаем страницу или перенаправляем на главную
-                    window.location.href = '/';
-                });
-            }
-        // ... (обработчик logout-link остается без изменений) ...
-    });
+        headerRight.appendChild(userBlock);
+
+        // ИСПРАВЛЕНИЕ: Разделяем обработчики
+        
+        // Клик по аватару — переход в профиль
+        document.getElementById('go-to-profile').onclick = () => {
+            window.location.href = '/profile';
+        };
+
+        // Клик по "Выйти" — только тогда разлогин
+        document.getElementById('logout-link').onclick = (e) => {
+            e.preventDefault();
+            localStorage.clear(); // Очищаем данные
+            window.location.href = '/'; // На главную
+        };
     }
+}
 
 
 

@@ -1,9 +1,15 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const scheduleList = document.getElementById('schedule-list');
+    const params = new URLSearchParams(window.location.search);
+    const filterMovieId = params.get('movieId');
 
     try {
         const response = await fetch('/api/schedule');
-        const sessions = await response.json();
+        let sessions = await response.json();
+
+        if (filterMovieId) {
+            sessions = sessions.filter(s => s.movie_id == filterMovieId);
+        }
 
         scheduleList.innerHTML = '';
 
@@ -36,7 +42,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 <!-- Кнопка справа -->
                 <div class="session-action">
-                    <button class="btn-book-session" onclick="window.location.href='/movie?id=${session.movie_id}'">Подробнее</button>
+                    <button class="btn-book-session" onclick="window.location.href='/booking?sessionId=${session.session_id}'">
+                        Выбрать места
+                    </button>
                 </div>
             `;
 

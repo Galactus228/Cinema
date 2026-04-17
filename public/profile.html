@@ -59,7 +59,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const profileContent = document.getElementById('profile-content');
             const token = localStorage.getItem('jwtToken');
-            
+            console.log("Отправляю токен:", token);
             if (!token) {
                 window.location.href = '/';
                 return;
@@ -69,10 +69,16 @@
             try {
                 const response = await fetch('/api/profile', {
                     method: 'GET',
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
                 });
                 const data = await response.json();
 
+                if (data.statusCode === 401 || response.status === 401) {
+                    console.error("Сервер отклонил токен");
+                    // Временно закомментируй редирект, чтобы увидеть ошибку в консоли
+                    // window.location.href = '/'; 
+                    return;
+                }
                 if (!response.ok) { throw new Error(data.message || 'Ошибка авторизации'); }
 
                 const userAvatarUrl = data.avatar_url || '/images/default-avatar.png';
@@ -181,11 +187,13 @@
                 uploadAvatarBtn.style.display = 'none';
 
             } catch (err) {
-                console.error("Ошибка получения профиля:", err);
-                localStorage.removeItem('jwtToken');
-                localStorage.removeItem('userName');
-                localStorage.removeItem('userAvatarUrl');
-                window.location.href = '/';
+                console.error("Ошибка загрузки профиля:", err);
+                profileContent.innerHTML = `
+            <div class="profile-card">
+                <p class="error-message">Не удалось загрузить данные профиля.</p>
+                <button class="btn-upload-avatar" onclick="location.reload()">Попробовать снова</button>
+            </div>
+        `;
             }
         });
     </script>

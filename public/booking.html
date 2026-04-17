@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Выбор мест - КиноДиплом</title>
+    <link rel="icon" type="image/png" href="/cinema_12223.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .booking-container { max-width: 900px; margin: 50px auto; padding: 20px; background: var(--surface-color); border-radius: 15px; }
+        .screen { width: 80%; height: 5px; background: #555; margin: 0 auto 50px; box-shadow: 0 10px 20px rgba(255,255,255,0.2); border-radius: 50%; text-align: center; color: #777; padding-top: 15px; font-size: 0.8rem; }
+        
+        .hall-layout { display: flex; flex-direction: column; gap: 10px; align-items: center; overflow-x: auto; padding: 20px; }
+        .row { display: flex; gap: 8px; align-items: center; }
+        .row-num { width: 30px; color: var(--text-muted); font-size: 0.8rem; }
+        
+        /* Базовый стиль места */
+        .seat { width: 35px; height: 35px; background: #333; border-radius: 6px 6px 12px 12px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+        
+        /* Состояния мест в сетке зала */
+        .hall-layout .seat.available { cursor: pointer; transition: 0.2s; color: transparent; }
+        .hall-layout .seat.available:hover { background: var(--primary-color); color: white; transform: translateY(-2px); }
+        .hall-layout .seat.taken { background: #ff4d4d; cursor: not-allowed; opacity: 0.8; color: white; border: none }
+        .hall-layout .seat.selected { background: var(--primary-color); box-shadow: 0 0 15px var(--primary-color); color: white; }
+
+        /* Стили для ЛЕГЕНДЫ (отключаем эффекты) */
+        .legend { display: flex; justify-content: center; gap: 30px; margin: 30px 0; border-top: 1px solid #333; padding-top: 20px; }
+        .legend-item { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--text-muted); }
+        .legend .seat { cursor: default !important; pointer-events: none; } /* Запрещаем клики и наведение в легенде */
+        .legend .seat.available { background: #333; }
+        .legend .seat.taken { background: #ff4d4d; opacity: 1; }
+        .legend .seat.selected { background: var(--primary-color); }
+
+        .btn-pay { display: block; width: 100%; max-width: 300px; margin: 20px auto; padding: 15px; font-size: 1.1rem; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <header class="header">
+    <div class="container header-content">
+        <div class="logo" onclick="window.location.href='/'" style="cursor:pointer;">🎬 КиноДиплом</div>
+        
+        <div class="header-right">
+            <nav class="nav">
+                <div class="dropdown">
+                    <span class="dropdown-trigger">Меню ▾</span>
+                    <div class="dropdown-content">
+                        <a href="/">Афиша</a>
+                        <a href="/schedule">Расписание</a>
+                        <a href="/coming-soon">Скоро в кино</a>
+                        <a href="/news">Новости</a>
+                        <a href="/promotions">Акции и скидки</a>
+                        <a href="/about">О нас</a>
+                    </div>
+                </div>
+            </nav>
+            <button class="btn-login">Войти в профиль</button>
+        </div>
+    </div>
+    </header>
+
+    <div class="container">
+        <div class="booking-container">
+            <h1 id="movie-title" style="text-align: center; margin-bottom: 5px;">Загрузка...</h1>
+            <p id="session-info" style="color: var(--text-muted); text-align: center; margin-bottom: 30px;"></p>
+
+            <div class="screen">ЭКРАН</div>
+            
+            <div id="hall-layout" class="hall-layout">
+                </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="seat available"></div> 
+                    <span>Свободно</span>
+                </div>
+                <div class="legend-item">
+                    <div class="seat taken"></div> 
+                    <span>Занято</span>
+                </div>
+                <div class="legend-item">
+                    <div class="seat selected"></div> 
+                    <span>Выбрано</span>
+                </div>
+            </div>
+
+            <div id="order-summary" style="text-align: center; margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
+                <p style="color: var(--text-muted);">Выбрано место:</p>
+                <h3 id="seat-details" style="color: var(--primary-color);">Не выбрано</h3>
+            </div>
+
+            <button id="buy-btn" class="btn-primary btn-pay" disabled>Купить билет</button>
+        </div>
+    </div>
+    <div id="auth-modal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        
+        <!-- Форма Входа -->
+        <div id="login-form-container">
+            <h2>Вход</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <div class="password-wrapper">
+                <input type="password" id="login-password" placeholder="Пароль" required>
+                <span class="toggle-password" onclick="togglePasswordVisibility('login-password')">👁️</span>
+                </div>
+                <button type="submit" class="btn-primary">Войти</button>
+                <p class="auth-switch">Нет аккаунта? <a href="#" id="go-to-register">Зарегистрироваться</a></p>
+                <div id="login-error" class="error-msg"></div>
+            </form>
+        </div>
+
+        <!-- Форма Регистрации (скрыта по умолчанию) -->
+        <div id="register-form-container" style="display: none;">
+            <h2>Регистрация</h2>
+            <form id="register-form">
+                <input type="text" id="reg-name" placeholder="Имя" required>
+                <input type="email" id="reg-email" placeholder="Email" required>
+                <div class="password-wrapper">
+                <input type="password" id="reg-password" placeholder="Пароль" required>
+                <span class="toggle-password" onclick="togglePasswordVisibility('reg-password')">👁️</span>
+                </div>
+                <button type="submit" class="btn-primary">Создать аккаунт</button>
+                <p class="auth-switch">Уже есть аккаунт? <a href="#" id="go-to-login">Войти</a></p>
+                <div id="reg-error" class="error-msg"></div>
+            </form>
+        </div>
+    </div>
+    </div>
+    <script src="/js/auth.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+const sessionId = urlParams.get('sessionId');
+let selectedSeats = []; // Массив для хранения выбранных объектов мест
+
+function showNotification(text, type = 'success') {
+    const old = document.querySelector('.toast');
+    if(old) old.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = text;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
+}
+
+async function loadData() {
+    if (!sessionId) { 
+        document.getElementById('movie-title').textContent = "Сеанс не найден";
+        return; 
+    }
+    try {
+        const res = await fetch(`/api/sessions/${sessionId}/seats`);
+        const seats = await res.json();
+        
+        document.getElementById('movie-title').textContent = "Выбор мест";
+        document.getElementById('session-info').textContent = `Сеанс #${sessionId}`;
+
+        const layout = document.getElementById('hall-layout');
+        const rows = {};
+        
+        // Группируем места по рядам
+        seats.forEach(s => {
+            if(!rows[s.row_num]) rows[s.row_num] = [];
+            rows[s.row_num].push(s);
+        });
+
+        layout.innerHTML = '';
+        Object.keys(rows).forEach(rNum => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'row';
+            rowDiv.innerHTML = `<div class="row-num">${rNum}</div>`;
+            
+            rows[rNum].forEach(s => {
+                const sDiv = document.createElement('div');
+                // Проверяем занятость (is_taken теперь приходит из твоего SQL подзапроса)
+                sDiv.className = `seat ${s.is_taken > 0 ? 'taken' : 'available'}`;
+                sDiv.textContent = s.seat_num;
+                
+                if(s.is_taken === 0) {
+                    sDiv.onclick = () => {
+                        // Если место уже выбрано — убираем его из списка
+                        if (sDiv.classList.contains('selected')) {
+                            sDiv.classList.remove('selected');
+                            selectedSeats = selectedSeats.filter(item => item.id !== s.id);
+                        } else {
+                            // Иначе добавляем в список
+                            sDiv.classList.add('selected');
+                            selectedSeats.push(s);
+                        }
+                        
+                        // ОБНОВЛЯЕМ ОТОБРАЖЕНИЕ ВЫБРАННЫХ МЕСТ
+                        const detailsElement = document.getElementById('seat-details');
+                        if (selectedSeats.length > 0) {
+                            // Формируем красивую строку: Ряд 1 (Место 5), Ряд 1 (Место 6)
+                            detailsElement.innerHTML = selectedSeats
+                                .map(item => `Ряд ${item.row_num} (Место ${item.seat_num})`)
+                                .join(', ');
+                            document.getElementById('buy-btn').disabled = false;
+                        } else {
+                            detailsElement.textContent = "Не выбрано";
+                            document.getElementById('buy-btn').disabled = true;
+                        }
+                    };
+                }
+                rowDiv.appendChild(sDiv);
+            });
+            layout.appendChild(rowDiv);
+        });
+    } catch (e) {
+        document.getElementById('movie-title').textContent = "Ошибка загрузки";
+    }
+}
+
+// КНОПКА ПОКУПКИ
+document.getElementById('buy-btn').onclick = async () => {
+    const token = localStorage.getItem('jwtToken');
+    if (!token) { 
+        showNotification("Войдите в профиль!", "error");
+        return; 
+    }
+
+    let successCount = 0;
+
+    // Цикл по всем выбранным местам (так как API принимает по одному)
+    for (let seat of selectedSeats) {
+        try {
+            const res = await fetch('/api/book-ticket', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ 
+                    session_id: sessionId, 
+                    seat_id: seat.id 
+                })
+            });
+
+            if (res.ok) successCount++;
+        } catch (err) {
+            console.error("Ошибка при бронировании места:", seat.id);
+        }
+    }
+
+    if (successCount === selectedSeats.length) {
+        showNotification(`Успешно забронировано мест: ${successCount}`, "success");
+    } else if (successCount > 0) {
+        showNotification(`Забронировано только ${successCount} из ${selectedSeats.length}`, "error");
+        setTimeout(() => window.location.reload(), 1500);
+    } else {
+        showNotification("Ошибка при бронировании", "error");
+    }
+};
+
+loadData();
+    </script>
+</body>
+</html>
