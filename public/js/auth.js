@@ -20,6 +20,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-link');
     const profileBtn = document.getElementById('go-to-profile');
 
+    window.openAuthModal = function() {
+        if (modal) {
+            modal.style.display = 'flex';
+            // Принудительно показываем форму входа, а не регистрации
+            loginContainer.style.display = 'block';
+            registerContainer.style.display = 'none';
+        }
+    };
+
     if (logoutBtn) {
     logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -35,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // --- Управление UI (открытие, закрытие, переключение) ---
     loginBtns.forEach(btn => {
-        btn.addEventListener('click', () => modal.style.display = 'flex');
+        btn.addEventListener('click', () => window.openAuthModal());
     });
     closeBtn.addEventListener('click', () => modal.style.display = 'none');
     window.addEventListener('click', (e) => {

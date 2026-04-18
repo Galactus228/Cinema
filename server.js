@@ -222,6 +222,25 @@ fastify.post('/api/login', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка сервера при авторизации' });
     }
 });
+// API: Сохранение сообщения из формы контактов
+fastify.post('/api/contacts', async (request, reply) => {
+    const { name, email, message } = request.body;
+
+    // Простая валидация
+    if (!name || !email || !message) {
+        return reply.status(400).send({ error: 'Все поля обязательны для заполнения' });
+    }
+
+    try {
+        const query = 'INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)';
+        await pool.query(query, [name, email, message]);
+
+        return reply.send({ message: 'Сообщение успешно сохранено! Мы свяжемся с вами в ближайшее время.' });
+    } catch (err) {
+        fastify.log.error(err);
+        return reply.status(500).send({ error: 'Ошибка сервера при сохранении сообщения' });
+    }
+});
 // API: ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ (ЗАЩИЩЕННЫЙ)
 fastify.get('/api/profile', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     try {
@@ -272,7 +291,7 @@ fastify.post('/api/profile/avatar', {
     //     }
     // }
 }, async (request, reply) => {
-    const userId = request.user.userId;
+    const userId = request.user.id;
     // Проверяем, что запрос действительно multipart
     if (!request.isMultipart()) {
         return reply.status(400).send({ error: 'Запрос должен быть multipart/form-data' });
@@ -379,6 +398,15 @@ fastify.get('/promotions', (req, reply) => reply.sendFile('promotions.html'));
 fastify.get('/schedule', (req, reply) => reply.sendFile('schedule.html'));
 fastify.get('/booking', (req, reply) => {
     reply.sendFile('booking.html');
+});
+fastify.get('/faq', async (request, reply) => {
+    return reply.sendFile('faq.html'); // Убедись, что путь к файлу верный
+});
+fastify.get('/privacy', async (request, reply) => {
+    return reply.sendFile('privacy.html');
+});
+fastify.get('/contacts', async (request, reply) => {
+    return reply.sendFile('contacts.html');
 });
 // Роут для страницы профиля
 fastify.get('/profile', (req, reply) => {

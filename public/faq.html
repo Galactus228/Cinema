@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>FAQ - КиноДиплом</title>
+    <link rel="icon" type="image/png" href="/cinema_12223.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .faq-container { max-width: 800px; margin: 50px auto; padding: 0 20px; }
+        .faq-title { text-align: center; margin-bottom: 40px; color: var(--primary-color); }
+        
+        .faq-item {
+            background: var(--surface-color);
+            margin-bottom: 15px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .faq-question {
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .faq-question:hover { background: rgba(255,255,255,0.05); }
+
+        .faq-answer {
+            padding: 0 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease-out;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .faq-item.active .faq-answer {
+            padding: 0 20px 20px 20px;
+            max-height: 500px; /* Достаточно для текста */
+        }
+
+        .faq-icon {
+            transition: transform 0.3s;
+            color: var(--primary-color);
+        }
+
+        .faq-item.active .faq-icon { transform: rotate(180deg); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo" onclick="window.location.href='/'" style="cursor:pointer;">🎬 КиноДиплом</div>
+            <div class="header-right">
+                <button class="btn-login" onclick="window.location.href='/'">На главную</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="faq-container">
+        <h1 class="faq-title">Часто задаваемые вопросы</h1>
+
+        <div class="faq-list">
+            <div class="faq-item">
+                <div class="faq-question">Как купить билет? <span class="faq-icon">▼</span></div>
+                <div class="faq-answer">Выберите понравившийся фильм на главной странице, нажмите «Купить билет», выберите подходящий сеанс и свободное место в зале. После подтверждения билет появится в вашем профиле.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Нужна ли регистрация? <span class="faq-icon">▼</span></div>
+                <div class="faq-answer">Да, для покупки билетов и доступа к истории заказов необходимо создать аккаунт. Это займет не более минуты.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Можно ли вернуть билет? <span class="faq-icon">▼</span></div>
+                <div class="faq-answer">Возврат билета возможен не позднее, чем за 30 минут до начала сеанса. Для оформления возврата свяжитесь с нашей поддержкой или обратитесь в кассу кинотеатра.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Что делать, если билет не появился в профиле? <span class="faq-icon">▼</span></div>
+                <div class="faq-answer">Попробуйте обновить страницу. Если билет не появился в течение 5 минут, проверьте списание средств и напишите нам на support@kinodiplom.ru.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.faq-question').forEach(item => {
+            item.addEventListener('click', () => {
+                const parent = item.parentElement;
+                parent.classList.toggle('active');
+            });
+        });
+    </script>
+</body>
+</html>
