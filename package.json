@@ -16,6 +16,7 @@
     "@fastify/static": "^7.0.4",
     "bcryptjs": "^3.0.3",
     "fastify": "^4.29.1",
-    "mysql2": "^3.19.0"
+    "mysql2": "^3.19.0",
+    "node-cron": "^4.2.1"
   }
 }

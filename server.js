@@ -53,36 +53,117 @@ let pool;
 
 // === ФУНКЦИЯ АВТООБНОВЛЕНИЯ ДАТ СЕАНСОВ ===
 // Она переносит все вчерашние (и более старые) сеансы на сегодня, сохраняя время
-async function refreshSessionDates() {
+// === ФУНКЦИЯ АВТОМАТИЧЕСКОГО СОЗДАНИЯ СЕАНСОВ ===
+async function generateDailySessions() {
     try {
-        await pool.query(`
-            UPDATE sessions 
-            SET start_time = CONCAT(DATE(DATE_ADD(NOW(), INTERVAL 3 HOUR)), ' ', TIME(start_time))
-            WHERE DATE(start_time) < DATE(DATE_ADD(NOW(), INTERVAL 3 HOUR))
+        // 1. Проверка на МСК (как в твоем исходнике)
+        const [todaySessions] = await pool.query(`
+            SELECT id FROM sessions 
+            WHERE DATE(start_time) = DATE(DATE_ADD(NOW(), INTERVAL 3 HOUR))
+            LIMIT 1
         `);
+
+        if (todaySessions.length === 0) {
+            console.log("[System] Генерация бесконфликтного расписания...");
+
+            const [movies] = await pool.query("SELECT id FROM movies WHERE status = 'now_playing'");
+            const [halls] = await pool.query('SELECT id FROM halls');
+            
+            const timeSlots = ['10:00:00', '14:00:00', '18:00:00', '21:00:00'];
+            const price = 350.00;
+
+            if (movies.length === 0 || halls.length === 0) return;
+
+            // 2. Генерируем все возможные уникальные слоты (Зал + Время)
+            let allAvailableSlots = [];
+            for (const hall of halls) {
+                for (const time of timeSlots) {
+                    allAvailableSlots.push({ hallId: hall.id, time: time });
+                }
+            }
+
+            // 3. Распределяем фильмы по этим слотам
+            // Теперь мы идем по списку СЛОТОВ, а не по списку ФИЛЬМОВ
+            for (let i = 0; i < allAvailableSlots.length; i++) {
+                const slot = allAvailableSlots[i];
+                
+                // Выбираем фильм по кругу (оператор остатка от деления %)
+                // Если слотов 12, а фильмов 3 — каждый фильм покажется 4 раза в разных залах/времени
+                const movie = movies[i % movies.length];
+
+                await pool.query(`
+                    INSERT INTO sessions (movie_id, hall_id, start_time, price)
+                    VALUES (?, ?, CONCAT(DATE(DATE_ADD(NOW(), INTERVAL 3 HOUR)), ' ', ?), ?)
+                `, [movie.id, slot.hallId, slot.time, price]);
+            }
+
+            console.log(`[System] Успешно распределено ${allAvailableSlots.length} сеансов.`);
+        }
     } catch (err) {
-        console.error("Ошибка при автообновлении дат:", err);
+        console.error("Ошибка при генерации сеансов:", err);
     }
 }
+// --- 1. Функция генерации сеансов на неделю ---
+async function generateWeeklySessions(pool) {
+    try {
+        const [movies] = await pool.query("SELECT id FROM movies WHERE status = 'now_playing'");
+        const [halls] = await pool.query('SELECT id FROM halls');
 
+        if (movies.length === 0 || halls.length === 0) return;
+
+        const timeSlots = ['10:00:00', '14:00:00', '18:00:00', '21:00:00'];
+        const price = 350.00;
+
+        for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+            // Получаем дату для MySQL: Сегодня + dayOffset
+            const [dateRow] = await pool.query("SELECT DATE_ADD(CURDATE(), INTERVAL ? DAY) as targetDate", [dayOffset]);
+            const targetDate = dateRow[0].targetDate;
+
+            // Проверяем, есть ли уже сеансы на эту дату
+            const [existing] = await pool.query("SELECT id FROM sessions WHERE DATE(start_time) = ? LIMIT 1", [targetDate]);
+
+            if (existing.length === 0) {
+                console.log(`[Generator] Создаем расписание на ${targetDate}`);
+                for (let i = 0; i < halls.length; i++) {
+                    for (let j = 0; j < timeSlots.length; j++) {
+                        const movie = movies[(i + j + dayOffset) % movies.length];
+                        const fullStartTime = `${targetDate} ${timeSlots[j]}`;
+
+                        await pool.query(
+                            "INSERT INTO sessions (movie_id, hall_id, start_time, price) VALUES (?, ?, ?, ?)",
+                            [movie.id, halls[i].id, fullStartTime, price]
+                        );
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Ошибка в генераторе:", err.message);
+        throw err; 
+    }
+}
 // API для получения афиши и сеансов
 fastify.get('/api/now-playing', async (request, reply) => {
     try {
-        await refreshSessionDates();
+        const targetDate = request.query.date || new Date().toISOString().split('T')[0];
+
+        // Используем LEFT JOIN, чтобы не терять фильмы без сеансов
         const [rows] = await pool.query(`
             SELECT 
                 m.id as movie_id, m.title, m.poster_url, m.genre, m.duration,
-                s.id as session_id, s.start_time, s.price, h.name as hall_name
+                s.id as session_id, s.start_time, s.price
             FROM movies m
-            JOIN sessions s ON m.id = s.movie_id
-            JOIN halls h ON s.hall_id = h.id
-            ORDER BY s.start_time ASC
-        `);
+            LEFT JOIN sessions s ON m.id = s.movie_id AND DATE(s.start_time) = ?
+            WHERE m.status = 'now_playing'
+            ORDER BY m.id, s.start_time ASC
+        `, [targetDate]);
+
+        // Группируем данные так, чтобы фильмы были всегда, а сеансы — если есть
+        const moviesMap = {};
         
-        // Группируем сеансы по фильмам для удобства фронтенда
-        const schedule = rows.reduce((acc, row) => {
-            if (!acc[row.movie_id]) {
-                acc[row.movie_id] = {
+        rows.forEach(row => {
+            if (!moviesMap[row.movie_id]) {
+                moviesMap[row.movie_id] = {
                     id: row.movie_id,
                     title: row.title,
                     poster: row.poster_url,
@@ -91,19 +172,20 @@ fastify.get('/api/now-playing', async (request, reply) => {
                     sessions: []
                 };
             }
-            acc[row.movie_id].sessions.push({
-                id: row.session_id,
-                time: row.start_time,
-                price: row.price,
-                hall: row.hall_name
-            });
-            return acc;
-        }, {});
+            
+            if (row.session_id) {
+                moviesMap[row.movie_id].sessions.push({
+                    id: row.session_id,
+                    time: row.start_time,
+                    price: row.price
+                });
+            }
+        });
 
-        return Object.values(schedule);
+        return Object.values(moviesMap);
     } catch (err) {
-        fastify.log.error(err);
-        return reply.status(500).send({ error: 'Ошибка базы данных' });
+        console.error(err);
+        return reply.status(500).send([]);
     }
 });
 // === НОВЫЙ API-МАРШРУТ ДЛЯ "СКОРО В КИНО" ===
@@ -113,7 +195,7 @@ fastify.get('/api/coming-soon-movies', async (request, reply) => {
         const [rows] = await pool.query(`
             SELECT id, title, poster_url, genre, duration
             FROM movies
-            WHERE id NOT IN (SELECT DISTINCT movie_id FROM sessions)
+            WHERE status = 'coming_soon'
             ORDER BY id DESC
         `);
         return rows;
@@ -122,33 +204,35 @@ fastify.get('/api/coming-soon-movies', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка БД' });
     }
 });
-// === НОВЫЙ API-МАРШРУТ ДЛЯ РАСПИСАНИЯ ===
+// API для расписания (аналогично добавляем фильтрацию)
 fastify.get('/api/schedule', async (request, reply) => {
     try {
-        await refreshSessionDates();
+        await generateWeeklySessions(pool);
+
+        const targetDate = request.query.date || new Date().toISOString().split('T')[0];
+
         const [rows] = await pool.query(`
             SELECT 
-                s.id as session_id,
-                m.id as movie_id,
-                s.start_time,
+                s.id as session_id, 
+                s.start_time, 
                 s.price,
-                h.name as hall_name,
-                m.title,
-                m.poster_url,
-                m.genre,
-                d.age_rating
+                m.id as movie_id, 
+                m.title, 
+                m.genre, 
+                md.age_rating, -- Теперь берем из md
+                h.name as hall_name
             FROM sessions s
             JOIN movies m ON s.movie_id = m.id
             JOIN halls h ON s.hall_id = h.id
-            LEFT JOIN movie_details d ON m.id = d.movie_id -- Используем LEFT JOIN, чтобы сеанс показался, даже если деталей фильма пока нет в базе
-            WHERE s.start_time > DATE_ADD(NOW(), INTERVAL 3 HOUR)
-            ORDER BY s.start_time ASC -- Сортировка по времени начала (от ближайших)
-        `);
-        
+            LEFT JOIN movie_details md ON m.id = md.movie_id -- ПРИСОЕДИНЯЕМ таблицу с деталями
+            WHERE DATE(s.start_time) = ?
+            ORDER BY s.start_time ASC
+        `, [targetDate]);
+
         return rows;
     } catch (err) {
-        fastify.log.error(err);
-        return reply.status(500).send({ error: 'Ошибка при загрузке расписания' });
+        console.error("Ошибка API /api/schedule:", err.message);
+        return []; 
     }
 });
 // Получение списка новостей

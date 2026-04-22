@@ -99,6 +99,12 @@
 
                 document.title = `${movie.title} - КиноДиплом`;
 
+                const buyButtonHtml = movie.status === 'now_playing' 
+                    ? `<button class="btn-buy-large" onclick="window.location.href='/schedule?movieId=${movie.id}'">Купить билет</button>`
+                    : `<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; text-align: center; border: 1px dashed var(--primary-color); color: var(--primary-color); font-weight: 700;">
+                        Билеты появятся после начала проката
+                       </div>`;
+
                 content.innerHTML = `
                     <div class="movie-big-poster" style="background-image: url('${movie.poster_url}')"></div>
                     <div class="movie-full-info">
@@ -118,7 +124,7 @@
 
                         <div class="movie-synopsis">${movie.synopsis || 'Описание фильма скоро появится.'}</div>
                         
-                        <button class="btn-buy-large" onclick="window.location.href='/schedule?movieId=${movie.id}'">Купить билет</button>
+                        ${buyButtonHtml}
                     </div>
                 `;
             } catch (err) {

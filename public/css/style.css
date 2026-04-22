@@ -575,4 +575,46 @@ main {
 .toast-success { background: #2ecc71; box-shadow: 0 5px 15px rgba(46,204,113,0.3); }
 .toast-error { background: #e74c3c; box-shadow: 0 5px 15px rgba(231,76,60,0.3); }
 @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+/* Контейнер для кнопок дат */
+.date-selector {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 30px;
+    padding: 10px 5px;
+    overflow-x: auto; /* Чтобы на мобилках можно было листать */
+}
 
+/* Сама кнопка */
+.date-btn {
+    min-width: 60px;
+    padding: 10px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+    text-align: center;
+}
+
+.date-btn span {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+/* Активная кнопка */
+.date-btn.active {
+    background: #e50914; /* Твой основной красный цвет */
+    border-color: #e50914;
+}
+
+.date-btn.active span {
+    color: white;
+}
+
+.date-btn:hover:not(.active) {
+    border-color: #e50914;
+}
