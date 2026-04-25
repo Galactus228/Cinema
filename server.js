@@ -245,6 +245,40 @@ fastify.get('/api/news', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка при загрузке новостей' });
     }
 });
+fastify.post('/api/purchase-tickets', async (request, reply) => {
+    const { sessionId, seatIds, userId, cardNumber } = request.body;
+
+    // В реальной жизни здесь была бы интеграция с Stripe/Yookassa
+    // Мы имитируем успешную проверку
+    try {
+        // Проверяем, не купил ли кто-то эти места, пока юзер вводил карту
+        const [existing] = await pool.query(
+            "SELECT id FROM tickets WHERE session_id = ? AND seat_id IN (?)",
+            [sessionId, seatIds]
+        );
+
+        if (existing.length > 0) {
+            return reply.status(400).send({ success: false, message: "Некоторые места уже заняты" });
+        }
+
+        // Имитируем задержку банковской операции
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Сохраняем каждый билет
+        for (const seatId of seatIds) {
+            await pool.query(
+                "INSERT INTO tickets (session_id, seat_id, user_id, status) VALUES (?, ?, ?, 'sold')",
+                [sessionId, seatId, userId]
+            );
+        }
+
+        return { success: true, message: "Билеты успешно куплены!" };
+    } catch (err) {
+        console.error(err);
+        return reply.status(500).send({ success: false, message: "Ошибка при проведении платежа" });
+    }
+});
+
 // API: РЕГИСТРАЦИЯ ПОЛЬЗОВАТЕЛЯ
 fastify.post('/api/register', async (request, reply) => {
     const { name, email, password } = request.body;
@@ -304,6 +338,18 @@ fastify.post('/api/login', async (request, reply) => {
     } catch (err) {
         fastify.log.error(err);
         return reply.status(500).send({ error: 'Ошибка сервера при авторизации' });
+    }
+});
+// Роут для получения данных об акциях (JSON)
+fastify.get('/api/promotions', async (request, reply) => {
+    try {
+        // Подключаемся к БД и берем только активные акции
+        // Если используешь mysql2 с промисами:
+        const [rows] = await pool.query("SELECT * FROM promotions WHERE is_active = 1");
+        return rows; 
+    } catch (err) {
+        fastify.log.error(err);
+        reply.status(500).send({ error: "Ошибка при получении данных из БД" });
     }
 });
 // API: Сохранение сообщения из формы контактов
@@ -430,7 +476,21 @@ fastify.get('/api/sessions/:id/seats', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка базы данных' });
     }
 });
-
+// НОВЫЙ РОУТ специально для получения цены, старый не трогаем
+fastify.get('/api/sessions/:id/price', async (request, reply) => {
+    try {
+        const { id } = request.params;
+        const [rows] = await pool.query("SELECT price FROM sessions WHERE id = ?", [id]);
+        
+        if (rows.length === 0) {
+            return reply.status(404).send({ price: 0 });
+        }
+        
+        return { price: rows[0].price };
+    } catch (err) {
+        return { price: 0, error: err.message };
+    }
+});
 // API: Покупка билета (защищен токеном)
 fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, async (request, reply) => {
     // Теперь здесь точно будет id, так как мы поправили login
