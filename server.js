@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs'); // Для работы с файловой системой
 const { pipeline } = require('stream'); // Для эффективной обработки потоков
 const util = require('util'); // Для promisy-фикации pipeline
-
+const { sendTicketEmail } = require('./public/js/emailService');
 const pump = util.promisify(pipeline);
 const mysql = require('mysql2/promise');
 const fastify = require('fastify')({ logger: true });
@@ -493,7 +493,6 @@ fastify.get('/api/sessions/:id/price', async (request, reply) => {
 });
 // API: Покупка билета (защищен токеном)
 fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, async (request, reply) => {
-    // Теперь здесь точно будет id, так как мы поправили login
     const user_id = request.user.id; 
     const { session_id, seat_id } = request.body;
 
@@ -502,12 +501,53 @@ fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, asyn
     }
 
     try {
-        // SQL с добавлением 3 часов (МСК)
+        // 1. Записываем бронирование в базу
         await pool.query(
             'INSERT INTO tickets (session_id, seat_id, user_id, created_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 3 HOUR))', 
             [session_id, seat_id, user_id]
         );
+
+        // 2. Получаем данные для письма (Email юзера, Название фильма, Время, Ряд и Место)
+        // Делаем JOIN, чтобы собрать информацию из разных таблиц
+        const [rows] = await pool.query(`
+            SELECT 
+                u.email, 
+                m.title, 
+                s.start_time, 
+                st.row_num, 
+                st.seat_num,
+                s.price
+            FROM users u
+            JOIN sessions s ON s.id = ?
+            JOIN movies m ON s.movie_id = m.id
+            JOIN seats st ON st.id = ?
+            WHERE u.id = ?
+        `, [session_id, seat_id, user_id]);
+
+        if (rows.length > 0) {
+            const data = rows[0];
+            
+            // Форматируем дату для письма
+            const formattedDate = new Date(data.start_time).toLocaleString('ru-RU', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // 3. Отправляем письмо (не используем await, чтобы не заставлять юзера ждать ответа сервера)
+            sendTicketEmail(data.email, {
+                title: data.title,
+                date: formattedDate,
+                row: data.row_num,
+                seat: data.seat_num,
+                price: data.price
+            }).catch(mailErr => console.error('Ошибка отправки письма:', mailErr));
+        }
+
         return { success: true };
+        
     } catch (err) {
         fastify.log.error(err);
         return reply.status(500).send({ error: 'Ошибка записи бронирования' });
@@ -533,6 +573,18 @@ fastify.get('/api/movie/:id', async (request, reply) => {
         fastify.log.error(err);
         return reply.status(500).send({ error: 'Ошибка сервера' });
     }
+});
+fastify.get('/api/sessions/:id/movie', async (request, reply) => {
+    const { id } = request.params;
+    const [rows] = await pool.query(`
+        SELECT m.title 
+        FROM sessions s 
+        JOIN movies m ON s.movie_id = m.id 
+        WHERE s.id = ?
+    `, [id]);
+    
+    if (rows.length === 0) return reply.status(404).send({ error: 'Фильм не найден' });
+    return rows[0];
 });
 fastify.get('/', (req, reply) => reply.sendFile('index.html'));
 fastify.get('/about', (req, reply) => reply.sendFile('about.html'));

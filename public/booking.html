@@ -172,6 +172,9 @@
                 return; 
             }
             try {
+                const movieRes = await fetch(`/api/sessions/${sessionId}/movie`);
+                const movieData = await movieRes.json();
+                const movieTitle = movieData.title || "Выбор мест";
                 // Загружаем места
                 const res = await fetch(`/api/sessions/${sessionId}/seats`);
                 const seats = await res.json();
@@ -181,8 +184,8 @@
                 const priceData = await priceRes.json();
                 sessionPrice = priceData.price || 0;
                 
-                document.getElementById('movie-title').textContent = "Выбор мест";
-                document.getElementById('session-info').textContent = `Сеанс #${sessionId} | Цена: ${sessionPrice} руб.`;
+                document.getElementById('movie-title').textContent = movieTitle;
+                document.getElementById('session-info').textContent = `Сеанс | Цена: ${sessionPrice} руб.`;
 
                 const layout = document.getElementById('hall-layout');
                 const rows = {};
