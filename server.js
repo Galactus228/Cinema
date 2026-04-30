@@ -219,13 +219,15 @@ fastify.get('/api/schedule', async (request, reply) => {
                 m.id as movie_id, 
                 m.title, 
                 m.genre, 
-                md.age_rating, -- Теперь берем из md
+                md.age_rating,
                 h.name as hall_name
             FROM sessions s
             JOIN movies m ON s.movie_id = m.id
             JOIN halls h ON s.hall_id = h.id
-            LEFT JOIN movie_details md ON m.id = md.movie_id -- ПРИСОЕДИНЯЕМ таблицу с деталями
+            LEFT JOIN movie_details md ON m.id = md.movie_id
             WHERE DATE(s.start_time) = ?
+              -- НОВОЕ УСЛОВИЕ: время начала должно быть больше, чем (сейчас - 15 минут)
+              AND s.start_time > DATE_SUB(DATE_ADD(NOW(), INTERVAL 3 HOUR), INTERVAL 15 MINUTE)
             ORDER BY s.start_time ASC
         `, [targetDate]);
 
@@ -493,30 +495,38 @@ fastify.get('/api/sessions/:id/price', async (request, reply) => {
 });
 // API: Покупка билета (защищен токеном)
 fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, async (request, reply) => {
-    const user_id = request.user.id; 
-    const { session_id, seat_id } = request.body;
+    const user_id = request.user.id;
+    // 1. Достаем ВСЕ нужные данные из тела запроса
+    const { session_id, seat_id, card_number, card_holder, amount } = request.body;
 
-    if (!user_id) {
-        return reply.status(401).send({ error: 'Пользователь не авторизован корректно' });
+    // Защита: если фронтенд забыл прислать номер карты или имя
+    if (!card_number || !card_holder) {
+        return reply.status(400).send({ error: 'Данные карты не заполнены' });
     }
 
+    const connection = await pool.getConnection();
     try {
-        // 1. Записываем бронирование в базу
-        await pool.query(
-            'INSERT INTO tickets (session_id, seat_id, user_id, created_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 3 HOUR))', 
+        await connection.beginTransaction();
+
+        // 2. Логируем транзакцию (берем только последние 4 цифры)
+        const lastFour = card_number.slice(-4);
+        await connection.query(
+            `INSERT INTO transactions (user_id, session_id, amount, card_holder, card_last_four, status) 
+             VALUES (?, ?, ?, ?, ?, 'success')`,
+            [user_id, session_id, amount, card_holder, lastFour]
+        );
+
+        // 3. Записываем сам билет
+        await connection.query(
+            'INSERT INTO tickets (session_id, seat_id, user_id, created_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 3 HOUR))',
             [session_id, seat_id, user_id]
         );
 
-        // 2. Получаем данные для письма (Email юзера, Название фильма, Время, Ряд и Место)
-        // Делаем JOIN, чтобы собрать информацию из разных таблиц
+        await connection.commit();
+
+        // 4. Собираем данные для Email (JOIN)
         const [rows] = await pool.query(`
-            SELECT 
-                u.email, 
-                m.title, 
-                s.start_time, 
-                st.row_num, 
-                st.seat_num,
-                s.price
+            SELECT u.email, m.title, s.start_time, st.row_num, st.seat_num, s.price
             FROM users u
             JOIN sessions s ON s.id = ?
             JOIN movies m ON s.movie_id = m.id
@@ -526,31 +536,27 @@ fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, asyn
 
         if (rows.length > 0) {
             const data = rows[0];
-            
-            // Форматируем дату для письма
             const formattedDate = new Date(data.start_time).toLocaleString('ru-RU', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+                day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
 
-            // 3. Отправляем письмо (не используем await, чтобы не заставлять юзера ждать ответа сервера)
             sendTicketEmail(data.email, {
                 title: data.title,
                 date: formattedDate,
                 row: data.row_num,
                 seat: data.seat_num,
-                price: data.price
+                price: amount // Используем сумму из платежа
             }).catch(mailErr => console.error('Ошибка отправки письма:', mailErr));
         }
 
         return { success: true };
-        
+
     } catch (err) {
+        await connection.rollback();
         fastify.log.error(err);
-        return reply.status(500).send({ error: 'Ошибка записи бронирования' });
+        return reply.status(500).send({ error: 'Ошибка транзакции при бронировании' });
+    } finally {
+        connection.release();
     }
 });
 // API для получения данных одного фильма по ID
@@ -574,6 +580,48 @@ fastify.get('/api/movie/:id', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка сервера' });
     }
 });
+fastify.delete('/api/tickets/:id', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+    const ticketId = request.params.id;
+    const userId = request.user.id;
+
+    try {
+        // 1. Получаем инфо о билете (сеанс и место), чтобы знать, что обновлять
+        const [tickets] = await pool.query(
+            'SELECT session_id, seat_id FROM tickets WHERE id = ? AND user_id = ?',
+            [ticketId, userId]
+        );
+
+        if (tickets.length === 0) {
+            return reply.status(403).send({ error: 'Билет не найден' });
+        }
+
+        const { session_id, seat_id } = tickets[0];
+
+        // 2. Освобождаем место в зале
+        await pool.query(
+            'UPDATE seats SET is_taken = 0 WHERE id = ?',
+            [seat_id]
+        );
+
+        // 3. Обновляем транзакцию (ставим статус refunded)
+        // Мы используем LIMIT 1, чтобы отменить только одну транзакцию, если их было несколько
+        await pool.query(
+            `UPDATE transactions SET status = 'refunded' 
+             WHERE user_id = ? AND session_id = ? AND status = 'success' 
+             LIMIT 1`, 
+            [userId, session_id]
+        );
+
+        // 4. Удаляем сам билет
+        await pool.query('DELETE FROM tickets WHERE id = ?', [ticketId]);
+
+        return { success: true, message: 'Билет возвращен, место свободно, статус транзакции изменен' };
+
+    } catch (err) {
+        fastify.log.error(err);
+        return reply.status(500).send({ error: 'Ошибка сервера при возврате' });
+    }
+});
 fastify.get('/api/sessions/:id/movie', async (request, reply) => {
     const { id } = request.params;
     const [rows] = await pool.query(`
@@ -585,6 +633,22 @@ fastify.get('/api/sessions/:id/movie', async (request, reply) => {
     
     if (rows.length === 0) return reply.status(404).send({ error: 'Фильм не найден' });
     return rows[0];
+});
+fastify.get('/api/pushkin-status/:sessionId', async (request, reply) => {
+    const { sessionId } = request.params;
+    try {
+        const [rows] = await pool.query(`
+            SELECT m.pushkin_card 
+            FROM movies m 
+            JOIN sessions s ON s.movie_id = m.id 
+            WHERE s.id = ?
+        `, [sessionId]);
+
+        // Возвращаем 1 (доступна) или 0 (нет)
+        return { isPushkinAvailable: rows[0] ? rows[0].pushkin_card : 0 };
+    } catch (err) {
+        return { isPushkinAvailable: 0 };
+    }
 });
 fastify.get('/', (req, reply) => reply.sendFile('index.html'));
 fastify.get('/about', (req, reply) => reply.sendFile('about.html'));

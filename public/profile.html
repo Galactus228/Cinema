@@ -81,13 +81,52 @@
            background-color: #218838;
            transform: scale(1.02);
         }
+        .btn-refund {
+    background-color: transparent;
+    color: #ff4d4d;
+    border: 1px solid #ff4d4d;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-top: 15px;
+    transition: all 0.3s;
+    width: 100%; /* На всю ширину карточки билета */
+}
+
+.btn-refund:hover {
+    background-color: #ff4d4d;
+    color: white;
+}
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+}
+.modal-content {
+    background: #1a1a1a;
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    text-align: center;
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.modal-content h3 { color: #007bff; margin-bottom: 15px; }
+.modal-buttons { display: flex; gap: 15px; margin-top: 25px; justify-content: center; }
+
+.btn-secondary { background: #333; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+.btn-refund-confirm { background: #ff4d4d; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
     <!-- HEADER -->
     <header class="header">
         <div class="container header-content">
-            <div class="logo" onclick="window.location.href='/'">🎬 КиноДиплом</div>
+            <div class="logo" onclick="window.location.href='/'">🎬 ЭН-СИ</div>
             <div class="header-right">
                 <!-- Сюда auth.js вставит аватарку и кнопку "Выйти" -->
                 <button class="btn-login" onclick="window.location.href='/'">Вернуться к афише</button> 
@@ -104,6 +143,13 @@
     
     <script src="/js/auth.js"></script>
     <script>
+        // 1. Глобальные переменные (в самом верху скрипта)
+    let ticketToRefund = null;
+
+    function refundTicket(ticketId) {
+        ticketToRefund = ticketId;
+        document.getElementById('refund-modal').style.display = 'flex';
+    }
         document.addEventListener('DOMContentLoaded', async () => {
             const profileContent = document.getElementById('profile-content');
             const token = localStorage.getItem('jwtToken');
@@ -112,7 +158,21 @@
                 window.location.href = '/';
                 return;
             }
+            document.getElementById('modal-cancel').onclick = () => {
+            document.getElementById('refund-modal').style.display = 'none';
+        };
 
+        document.getElementById('modal-confirm').onclick = async () => {
+            const token = localStorage.getItem('jwtToken');
+            try {
+                const res = await fetch(`/api/tickets/${ticketToRefund}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) location.reload();
+                else alert('Ошибка возврата');
+            } catch (err) { console.error(err); }
+        };
             function formatTicketDate(dateString) {
               const date = new Date(dateString);
               return date.toLocaleString('ru-RU', {
@@ -174,6 +234,7 @@
                                                 Ряд: <b>${ticket.row_num}</b>, Место: <b>${ticket.seat_num}</b>
                                                 <span class="ticket-date">📅 ${formatTicketDate(ticket.start_time)}</span>
                                             </div>
+                                            <button class="btn-refund" onclick="refundTicket(${ticket.id})">Вернуть билет</button>
                                         </div>
                                     `).join('')}
                                   </div>` 
@@ -269,5 +330,15 @@
             }
         });
     </script>
+    <div id="refund-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3>Подтверждение возврата</h3>
+        <p id="modal-ticket-info">Вы действительно хотите вернуть этот билет?</p>
+        <div class="modal-buttons">
+            <button id="modal-cancel" class="btn-secondary">Отмена</button>
+            <button id="modal-confirm" class="btn-refund-confirm">Да, вернуть</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const filterMovieId = params.get('movieId');
 
+    // Ссылка на изображение для "пустого" состояния
+    const EMPTY_IMAGE_URL = 'https://cdn-icons-png.flaticon.com/512/4076/4076402.png';
+
     // По умолчанию выбрана сегодняшняя дата
     let selectedDate = new Date().toISOString().split('T')[0];
 
@@ -23,8 +26,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             scheduleList.innerHTML = '';
 
+            // ПРОВЕРКА НА ПУСТОЕ РАСПИСАНИЕ
             if (sessions.length === 0) {
-                scheduleList.innerHTML = '<p class="no-sessions">На этот день сеансов нет.</p>';
+                const emptyContainer = document.createElement('div');
+                emptyContainer.className = 'empty-schedule-state'; 
+                emptyContainer.innerHTML = `
+                    <div style="text-align: center; padding: 50px 20px;">
+                        <img src="${EMPTY_IMAGE_URL}" alt="Сеансов нет" 
+                             style="width: 160px; opacity: 0.5; filter: grayscale(1); margin-bottom: 20px;">
+                        <p class="no-sessions" style="font-size: 1.2rem; color: var(--text-muted, #888); font-weight: 600;">
+                            На выбранную дату сеансов нет
+                        </p>
+                    </div>
+                `;
+                scheduleList.appendChild(emptyContainer);
                 return;
             }
 
@@ -47,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="session-action">
+                        <!-- ВЕРНУЛ СТАРЫЙ РОУТ ПО ТВОЕЙ ПРОСЬБЕ -->
                         <button class="btn-book-session" onclick="window.location.href='/booking?sessionId=${session.session_id}'">
                             Выбрать места
                         </button>
@@ -56,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) {
             console.error('Ошибка:', error);
-            scheduleList.innerHTML = '<p style="color: red;">Ошибка загрузки.</p>';
+            scheduleList.innerHTML = '<p style="color: red; text-align: center;">Ошибка загрузки расписания.</p>';
         }
     }
 

@@ -18,12 +18,50 @@
         .movie-synopsis { line-height: 1.8; font-size: 1.1rem; color: #ddd; margin-bottom: 30px; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; }
         .btn-buy-large { background: var(--primary-color); color: white; border: none; padding: 15px 40px; border-radius: 8px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: 0.3s; }
         .btn-buy-large:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(229,9,20,0.5); }
+        /* Плашка под постером */
+.pushkin-detail-badge {
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid #28a745;
+    color: #28a745;
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 20px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Зеленая галочка внутри плашки */
+.pushkin-detail-badge::before {
+    content: '✓';
+    background: #28a745;
+    color: white;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+}
+
+/* Обертка для левой колонки, чтобы плашка встала под постер */
+.poster-side {
+    display: flex;
+    flex-direction: column;
+    width: 350px;
+    flex-shrink: 0;
+}
     </style>
 </head>
 <body>
     <header class="header">
         <div class="container header-content">
-            <div class="logo">🎬 КиноДиплом</div>
+            <div class="logo" onclick="window.location.href='/'">🎬 ЭН-СИ</div>
             <div class="header-right">
                 <nav class="nav">
                     <div class="dropdown">
@@ -96,6 +134,12 @@
             try {
                 const res = await fetch(`/api/movie/${movieId}`);
                 const movie = await res.json();
+                const pushkinEmoji = movie.pushkin_card ? ' <span style="font-size: 0.7em; vertical-align: middle;">💳<span style="color:#28a745">✓</span></span>' : '';
+
+                // Подготавливаем плашку под постер
+                const pushkinBadgeHtml = movie.pushkin_card 
+                ? `<div class="pushkin-detail-badge">Доступно по Пушкинской карте</div>` 
+                : '';
 
                 document.title = `${movie.title} - КиноДиплом`;
 
@@ -106,7 +150,11 @@
                        </div>`;
 
                 content.innerHTML = `
+                    <div class="poster-side">
                     <div class="movie-big-poster" style="background-image: url('${movie.poster_url}')"></div>
+                    ${pushkinBadgeHtml}
+                    </div>
+
                     <div class="movie-full-info">
                         <h1 class="movie-full-title">${movie.title}</h1>
                         <div class="movie-tags">

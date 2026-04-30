@@ -39,12 +39,58 @@
         .card-row { display: flex; gap: 10px; }
         .total-display { text-align: center; margin-bottom: 20px; font-size: 1.1rem; color: var(--text-muted); }
         .total-display b { color: var(--primary-color); font-size: 1.6rem; }
+        /* Контейнер для кнопок, чтобы они стояли рядом */
+.actions-container {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    max-width: 500px;
+    margin: 20px auto;
+}
+
+/* Обычная кнопка */
+.btn-pay {
+    flex: 1;
+    padding: 15px;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* Супер черная кнопка Пушкинской карты */
+.btn-pushkin-black {
+    flex: 1;
+    background-color: #000000 !important;
+    color: #00ff00 !important; /* Зеленый текст */
+    border: 2px solid #00ff00 !important;
+    border-radius: 8px;
+    padding: 15px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: 0.3s;
+    display: none; /* По умолчанию скрыта */
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-pushkin-black:hover {
+    background-color: #111 !important;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
+}
+
+.btn-pushkin-black:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #005500 !important;
+    color: #005500 !important;
+}
     </style>
 </head>
 <body>
     <header class="header">
         <div class="container header-content">
-            <div class="logo" onclick="window.location.href='/'" style="cursor:pointer;">🎬 КиноДиплом</div>
+            <div class="logo" onclick="window.location.href='/'" style="cursor:pointer;">🎬 ЭН-СИ</div>
             <div class="header-right">
                 <nav class="nav">
                     <div class="dropdown">
@@ -83,7 +129,10 @@
                 <h3 id="seat-details" style="color: var(--primary-color);">Не выбрано</h3>
             </div>
 
-            <button id="buy-btn" class="btn-primary btn-pay" disabled>Купить билет</button>
+            <div class="actions-container">
+                <button id="buy-btn" class="btn-primary btn-pay" disabled>Купить билет</button>
+                <button id="pushkin-btn" class="btn-pushkin-black" disabled>Пушкинская карта</button>
+            </div>
         </div>
     </div>
 
@@ -101,18 +150,42 @@
                 </div>
                 <input type="text" placeholder="ИМЯ ВЛАДЕЛЬЦА" required>
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-    <button type="button" id="cancel-pay-btn" style="flex: 1; padding: 15px; background: #444; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold;">
-        Отмена
-    </button>
-    
-    <button type="submit" id="confirm-pay-btn" class="btn-primary" style="flex: 2; padding: 15px;">
-        Оплатить билеты
-    </button>
-</div>
+                <button type="button" id="cancel-pay-btn" style="flex: 1; padding: 15px; background: #444; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold;">
+                Отмена
+                </button>  
+                <button type="submit" id="confirm-pay-btn" class="btn-primary" style="flex: 2; padding: 15px;">
+                Оплатить билеты
+                </button>
+                </div>   
+            </div>
+        </form>
+    </div>    
+    <!-- ТЕПЕРЬ МОЖНО НАЧИНАТЬ НОВУЮ МОДАЛКУ -->
+    <div id="pushkin-modal" class="modal-overlay">
+        <div class="modal-content pay-modal-content" style="border: 2px solid #00ff00; background: #000;">
+            <span class="close-modal" id="close-pushkin-modal">&times;</span>
+            <h2 style="text-align: center; color: #00ff00;">Пушкинская карта</h2>
+            <div class="total-display" style="color: #ccc;">Сумма к списанию: <br><b id="pushkin-modal-amount" style="color: #00ff00;">0</b> руб.</div>
+            
+            <form id="pushkin-payment-form" class="card-form">
+                <input type="text" id="pushkin-card-num" placeholder="5381 .... .... ...." maxlength="19" required style="border-color: #005500;">
+                <div class="card-row">
+                    <input type="text" placeholder="ММ/ГГ" maxlength="5" required style="width: 60%; border-color: #005500;">
+                    <input type="password" placeholder="CVC" maxlength="3" required style="width: 40%; border-color: #005500;">
+                </div>
+                <input type="text" id="pushkin-card-holder" placeholder="ИМЯ ВЛАДЕЛЬЦА" required style="border-color: #005500;">
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" id="cancel-pushkin-btn" style="flex: 1; padding: 15px; background: #222; border: none; border-radius: 8px; color: #888; cursor: pointer;">
+                        Отмена
+                    </button>
+                    <button type="submit" id="confirm-pushkin-btn" class="btn-pushkin-black" style="flex: 2; display: flex;">
+                        Подтвердить оплату
+                    </button>
+                </div>
             </form>
         </div>
     </div>
-
     <div id="auth-modal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
@@ -153,6 +226,25 @@
         let selectedSeats = [];
         let sessionPrice = 0;
 
+        async function initPushkinButton() {
+    const pushkinBtn = document.getElementById('pushkin-btn');
+    
+    try {
+        // 2. Запрашиваем статус у сервера
+        const response = await fetch(`/api/pushkin-status/${sessionId}`);
+        const data = await response.json();
+        
+        // 3. Если статус 1 — показываем черную кнопку
+        if (data.isPushkinAvailable === 1) {
+            pushkinBtn.style.display = 'flex';
+        } else {
+            pushkinBtn.style.display = 'none';
+        }
+    } catch (err) {
+        console.error("Ошибка проверки Пушкинской карты:", err);
+        pushkinBtn.style.display = 'none';
+    }
+}  
         function showNotification(text, type = 'success') {
             const old = document.querySelector('.toast');
             if(old) old.remove();
@@ -208,25 +300,36 @@
                         
                         if(s.is_taken === 0) {
                             sDiv.onclick = () => {
-                                if (sDiv.classList.contains('selected')) {
-                                    sDiv.classList.remove('selected');
-                                    selectedSeats = selectedSeats.filter(item => item.id !== s.id);
-                                } else {
-                                    sDiv.classList.add('selected');
-                                    selectedSeats.push(s);
-                                }
-                                
-                                const detailsElement = document.getElementById('seat-details');
-                                if (selectedSeats.length > 0) {
-                                    detailsElement.innerHTML = selectedSeats
-                                        .map(item => `Ряд ${item.row_num} (Место ${item.seat_num})`)
-                                        .join(', ');
-                                    document.getElementById('buy-btn').disabled = false;
-                                } else {
-                                    detailsElement.textContent = "Не выбрано";
-                                    document.getElementById('buy-btn').disabled = true;
-                                }
-                            };
+    if (sDiv.classList.contains('selected')) {
+        sDiv.classList.remove('selected');
+        selectedSeats = selectedSeats.filter(item => item.id !== s.id);
+    } else {
+        sDiv.classList.add('selected');
+        selectedSeats.push(s);
+    }
+    
+    const buyBtn = document.getElementById('buy-btn');
+    const pushkinBtn = document.getElementById('pushkin-btn');
+    const detailsElement = document.getElementById('seat-details');
+
+    if (selectedSeats.length > 0) {
+        detailsElement.innerHTML = selectedSeats.map(item => `Ряд ${item.row_num} (Место ${item.seat_num})`).join(', ');
+        
+        // Синяя кнопка работает всегда, если выбрано хотя бы 1 место
+        buyBtn.disabled = false;
+
+        // ПУШКИНСКАЯ КНОПКА: работает ТОЛЬКО если выбрано ровно 1 место
+        if (selectedSeats.length === 1) {
+            pushkinBtn.disabled = false;
+        } else {
+            pushkinBtn.disabled = true; // Она "потухнет", если выбрано 2 и более мест
+        }
+    } else {
+        detailsElement.textContent = "Не выбрано";
+        buyBtn.disabled = true;
+        pushkinBtn.disabled = true;
+    }
+};
                         }
                         rowDiv.appendChild(sDiv);
                     });
@@ -239,7 +342,7 @@
 
         // Логика модального окна оплаты
 const payModal = document.getElementById('payment-modal');
-
+const pushkinModal = document.getElementById('pushkin-modal');
 // Функция закрытия (используем в нескольких местах)
 const closePayment = () => {
     payModal.style.display = 'none';
@@ -288,6 +391,11 @@ document.getElementById('payment-form').onsubmit = async (e) => {
     const token = localStorage.getItem('jwtToken');
     const btn = document.getElementById('confirm-pay-btn');
     
+    // 1. Собираем данные из полей карты
+    const cardNumber = document.getElementById('card-num').value;
+    // Находим инпут с именем владельца (он у тебя без ID, найдем по типу или порядку)
+    const cardHolder = e.target.querySelector('input[placeholder="ИМЯ ВЛАДЕЛЬЦА"]').value;
+    
     btn.disabled = true;
     btn.innerText = 'Проверка платежа...';
 
@@ -295,7 +403,7 @@ document.getElementById('payment-form').onsubmit = async (e) => {
     await new Promise(r => setTimeout(r, 1200));
 
     let successCount = 0;
-    const seatsToBook = [...selectedSeats]; // Копируем массив
+    const seatsToBook = [...selectedSeats]; 
 
     // ЦИКЛ БРОНИРОВАНИЯ
     for (let seat of seatsToBook) {
@@ -308,7 +416,11 @@ document.getElementById('payment-form').onsubmit = async (e) => {
                 },
                 body: JSON.stringify({ 
                     session_id: sessionId, 
-                    seat_id: seat.id 
+                    seat_id: seat.id,
+                    // ДОБАВЛЯЕМ НОВЫЕ ПОЛЯ:
+                    card_number: cardNumber,
+                    card_holder: cardHolder,
+                    amount: sessionPrice // Цена за один билет
                 })
             });
             if (res.ok) successCount++;
@@ -319,32 +431,142 @@ document.getElementById('payment-form').onsubmit = async (e) => {
 
     if (successCount === seatsToBook.length) {
         showNotification(`Успешно! Куплено билетов: ${successCount}`, "success");
-        
         closePayment();
-        
-        // Сброс состояния интерфейса
         selectedSeats = [];
         document.getElementById('buy-btn').disabled = true;
         document.getElementById('seat-details').textContent = "Не выбрано";
-        
-        // Обновляем зал
         loadData(); 
-
-        btn.disabled = false;
-        btn.innerText = 'Оплатить билеты';
-    } else if (successCount > 0) {
-        showNotification(`Ошибка: забронировано только ${successCount} из ${seatsToBook.length}`, "error");
-        loadData();
-        btn.disabled = false;
-        btn.innerText = 'Оплатить билеты';
     } else {
-        showNotification("Ошибка при проведении оплаты", "error");
-        btn.disabled = false;
-        btn.innerText = 'Оплатить билеты';
+        showNotification("Ошибка при проведении оплаты. Проверьте данные карты.", "error");
+    }
+    
+    btn.disabled = false;
+    btn.innerText = 'Оплатить билеты';
+};
+// 1. Функция закрытия
+const closePushkin = () => {
+    if (pushkinModal) {
+        pushkinModal.style.display = 'none';
+        const form = document.getElementById('pushkin-payment-form');
+        if (form) form.reset();
     }
 };
 
+// 2. Привязка закрытия к кнопкам
+if (document.getElementById('close-pushkin-modal')) {
+    document.getElementById('close-pushkin-modal').onclick = closePushkin;
+}
+if (document.getElementById('cancel-pushkin-btn')) {
+    document.getElementById('cancel-pushkin-btn').onclick = closePushkin;
+}
+
+// 3. Логика открытия с проверкой на 1 место
+const pushkinBtn = document.getElementById('pushkin-btn');
+if (pushkinBtn) {
+    pushkinBtn.onclick = () => {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) { 
+            showNotification("Для оплаты Пушкинской картой необходимо войти!", "error");
+            if (typeof window.openAuthModal === 'function') window.openAuthModal();
+            return; 
+        }
+
+        // ОГРАНИЧЕНИЕ: Только 1 билет
+        if (selectedSeats.length > 1) {
+            showNotification("По Пушкинской карте можно купить только 1 билет!", "error");
+            return;
+        }
+        
+        if (selectedSeats.length === 0) {
+            showNotification("Сначала выберите место", "error");
+            return;
+        }
+        
+        const total = selectedSeats.length * sessionPrice;
+        document.getElementById('pushkin-modal-amount').innerText = total;
+        pushkinModal.style.display = 'flex';
+    };
+}
+
+// 4. Маски для полей ввода (Номер карты и Дата)
+if (document.getElementById('pushkin-card-num')) {
+    document.getElementById('pushkin-card-num').oninput = (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+    };
+}
+
+const dateInputs = document.querySelectorAll('input[placeholder="ММ/ГГ"]');
+dateInputs.forEach(input => {
+    input.oninput = (e) => {
+        let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+        if (v.length >= 3) {
+            v = v.slice(0, 2) + '/' + v.slice(2);
+        }
+        e.target.value = v;
+    };
+});
+
+// 5. Обработка отправки формы
+const pushkinForm = document.getElementById('pushkin-payment-form');
+if (pushkinForm) {
+    pushkinForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const token = localStorage.getItem('jwtToken');
+        const btn = document.getElementById('confirm-pushkin-btn');
+        
+        const cardNumber = document.getElementById('pushkin-card-num').value;
+        const cardHolder = document.getElementById('pushkin-card-holder').value;
+        
+        btn.disabled = true;
+        btn.innerText = 'Авторизация...';
+
+        await new Promise(r => setTimeout(r, 1500)); 
+
+        let successCount = 0;
+        const seatsToBook = [...selectedSeats]; 
+
+        for (let seat of seatsToBook) {
+            try {
+                const res = await fetch('/api/book-ticket', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ 
+                        session_id: sessionId, 
+                        seat_id: seat.id,
+                        card_number: cardNumber,
+                        card_holder: cardHolder,
+                        amount: sessionPrice,
+                        payment_type: 'pushkin'
+                    })
+                });
+                if (res.ok) successCount++;
+            } catch (err) {
+                console.error("Ошибка:", err);
+            }
+        }
+
+        if (successCount === seatsToBook.length) {
+            showNotification(`Готово! Билет оплачен Пушкинской картой`, "success");
+            closePushkin();
+            selectedSeats = [];
+            document.getElementById('buy-btn').disabled = true;
+            document.getElementById('pushkin-btn').disabled = true;
+            document.getElementById('seat-details').textContent = "Не выбрано";
+            loadData(); // Перерисовываем зал
+        } else {
+            showNotification("Ошибка транзакции. Карта отклонена.", "error");
+        }
+        
+        btn.disabled = false;
+        btn.innerText = 'Подтвердить оплату';
+    };
+}
+
         loadData();
+        initPushkinButton();
     </script>
 </body>
 </html>

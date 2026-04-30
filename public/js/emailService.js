@@ -44,7 +44,7 @@ async function sendTicketEmail(userEmail, ticketData) {
             </div>
             
             <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #555;">
-                &copy; 2026 КиноДиплом. Все права защищены.
+                &copy; 2026. Все права защищены. Дипломный проект.
             </div>
         </div>
         `
