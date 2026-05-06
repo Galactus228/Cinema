@@ -120,6 +120,102 @@
 
 .btn-secondary { background: #333; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
 .btn-refund-confirm { background: #ff4d4d; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+/* Контейнер для всей области слайдера */
+.tickets-slider-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Окно, через которое мы видим билеты */
+.tickets-viewport {
+    overflow: hidden;
+    width: 100%;
+    border-radius: 8px;
+}
+
+/* Сама лента с билетами */
+.tickets-list {
+    display: flex;
+    gap: 20px;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    padding: 10px 5px; /* чтобы тени не обрезались */
+}
+
+/* Фиксированная ширина карточки в слайдере */
+.ticket-card {
+    min-width: 280px;
+    max-width: 280px;
+    background: #2a2a2a;
+    border-left: 5px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+    flex-shrink: 0; /* чтобы карточки не сжимались */
+}
+
+/* Кнопки перелистывания */
+.slider-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: 0.3s;
+    z-index: 5;
+    flex-shrink: 0;
+}
+
+.slider-btn:hover {
+    background: var(--primary-color);
+    box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
+}
+
+.slider-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Прячем кнопки, если билетов мало */
+.hidden { display: none !important; }
+/* Стили для стандартного чека */
+.receipt-card {
+    min-width: 200px;
+    max-width: 200px;
+    background: #ffffff; /* Белый фон */
+    color: #000000;    /* Черный текст */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    flex-shrink: 0;
+    font-family: 'Courier New', Courier, monospace; /* Шрифты как на кассовом чеке */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.receipt-card:hover { transform: scale(1.02); }
+
+.receipt-header { border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; font-size: 0.8rem; }
+.receipt-body { font-size: 0.75rem; line-height: 1.4; }
+.receipt-footer { border-top: 1px dashed #000; margin-top: 10px; padding-top: 5px; font-weight: bold; text-align: right; }
+
+/* Общий контейнер для секции чеков */
+.receipts-section { margin-top: 50px; }
+/* Кастомный скроллбар для области билетов и чеков, если нужно */
+.tickets-viewport::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -182,6 +278,55 @@
               minute: '2-digit'
             });
             }
+            // Функция для открытия модального окна с билетом
+            // Сделай функцию глобальной
+window.openTicketModal = function(ticketData) {
+    const modal = document.getElementById('ticket-modal');
+    const container = document.getElementById('ticket-container');
+    
+    // Если по какой-то причине modal не найден в DOM
+    if (!modal) {
+        console.error("Модальное окно 'ticket-modal' не найдено!");
+        return;
+    }
+
+    container.innerHTML = `
+        <div style="background-color: #1a1a1a; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; border-radius: 10px; max-width: 600px; margin: auto; border: 1px solid #333; text-align: left;">
+            <h1 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; text-transform: uppercase; font-size: 24px; margin-top: 0;">
+                🎬 Электронный билет
+            </h1>
+            <p style="font-size: 16px; margin-top: 20px;">
+                Спасибо за покупку! Ждем вас в нашем кинотеатре.
+            </p>
+            <div style="background-color: #262626; padding: 20px; border-radius: 8px; margin-top: 20px; line-height: 1.6;">
+                <p style="margin: 5px 0;"><strong style="color: #007bff;">Фильм:</strong> ${ticketData.title}</p>
+                <p style="margin: 5px 0;"><strong style="color: #007bff;">Дата и время:</strong> ${new Date(ticketData.start_time).toLocaleString('ru-RU')}</p>
+                <p style="margin: 5px 0;">
+                    <strong style="color: #007bff;">Ряд:</strong> ${ticketData.row_num} | 
+                    <strong style="color: #007bff;">Место:</strong> ${ticketData.seat_num}
+                </p>
+                <p style="margin: 5px 0;"><strong style="color: #007bff;">Стоимость:</strong> ${ticketData.price || '500'} руб.</p>
+            </div>
+            <div style="margin-top: 30px; padding: 15px; border: 1px dashed #555; text-align: center; color: #888; font-size: 14px;">
+                Покажите это окно контроллеру при входе в зал.
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+// Обработчики закрытия модалки билета
+document.getElementById('close-ticket').onclick = () => {
+    document.getElementById('ticket-modal').style.display = 'none';
+};
+
+window.addEventListener('click', (event) => {
+    const modal = document.getElementById('ticket-modal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+});
             // Получаем данные профиля (уже обновленный API)
             try {
                 const response = await fetch('/api/profile', {
@@ -203,46 +348,92 @@
                 const userEmail = data.email;
 
                 profileContent.innerHTML = `
-                    <div class="profile-card">
-                        <div class="profile-card-header">
-                            <img src="${userAvatarUrl}" alt="Аватар" class="profile-avatar-large" id="profile-main-avatar">
-                            <div class="profile-upload-section">
-                                 <input type="file" id="avatar-upload" accept="image/jpeg,image/png,image/webp">
-    
-                                 <label for="avatar-upload" class="avatar-upload-label">
-                                    📷 Выбрать новое фото
-                                 </label>
-    
-                                 <div id="upload-status" class="upload-message" style="margin-bottom: 10px;"></div>
-                                 <button id="upload-avatar-btn" class="btn-upload-avatar">Подтвердить обновление</button>
-    
-                                 <div id="upload-error" class="error-message"></div>
-                            </div>
-                            <div>
-                                <h2 class="profile-name">${userName}</h2>
-                                <p class="profile-email">${userEmail}</p>
-                            </div>
+    <div class="profile-card">
+        <div class="profile-card-header">
+            <!-- Аватарка -->
+            <img src="${userAvatarUrl}" alt="Аватар" class="profile-avatar-large" id="profile-main-avatar">
+            
+            <!-- Имя и Почта прямо под аватаркой -->
+            <div class="profile-info-text">
+                <h2 class="profile-name">${userName}</h2>
+                <p class="profile-email">${userEmail}</p>
+            </div>
+
+            <!-- Кнопка выбора фото теперь под текстом -->
+            <div class="profile-upload-section">
+                 <input type="file" id="avatar-upload" accept="image/jpeg,image/png,image/webp">
+
+                 <label for="avatar-upload" class="avatar-upload-label">
+                    📷 Сменить фото
+                 </label>
+
+                 <div id="upload-status" class="upload-message" style="margin-bottom: 10px;"></div>
+                 <button id="upload-avatar-btn" class="btn-upload-avatar">Подтвердить обновление</button>
+                 <div id="upload-error" class="error-message"></div>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <h3>Мои билеты</h3>
+            ${data.bookings.length > 0 
+                ? `<div class="tickets-slider-wrapper">
+        <button class="slider-btn prev-btn" id="prevBtn" onclick="moveSlider(-1)">❮</button>
+        
+        <div class="tickets-viewport">
+            <div class="tickets-list" id="ticketsList">
+                ${data.bookings.map(ticket => {
+                    const ticketJson = JSON.stringify(ticket).replace(/"/g, '&quot;');
+                    return `
+                    <div class="ticket-card" ondblclick="openTicketModal(${ticketJson})" style="cursor: pointer;">
+                        <div class="ticket-movie-title">${ticket.title}</div>
+                        <div class="ticket-info">
+                            Ряд: <b>${ticket.row_num}</b>, Место: <b>${ticket.seat_num}</b>
+                            <span class="ticket-date">📅 ${formatTicketDate(ticket.start_time)}</span>
                         </div>
-                        <div class="profile-section">
-                            <h3>Мои билеты</h3>
-                            ${data.bookings.length > 0 
-                                ? `<div class="tickets-list">
-                                    ${data.bookings.map(ticket => `
-                                        <div class="ticket-card">
-                                            <div class="ticket-movie-title">${ticket.title}</div>
-                                            <div class="ticket-info">
-                                                Ряд: <b>${ticket.row_num}</b>, Место: <b>${ticket.seat_num}</b>
-                                                <span class="ticket-date">📅 ${formatTicketDate(ticket.start_time)}</span>
-                                            </div>
-                                            <button class="btn-refund" onclick="refundTicket(${ticket.id})">Вернуть билет</button>
-                                        </div>
-                                    `).join('')}
-                                  </div>` 
-                                : '<p class="ticket-history-placeholder">У вас пока нет купленных билетов. <a href="/" style="color:var(--primary-color)">Купить первый?</a></p>'
-                            }
+                        <button class="btn-refund" onclick="event.stopPropagation(); refundTicket(${ticket.id})">Вернуть билет</button>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>
+
+        <button class="slider-btn next-btn" id="nextBtn" onclick="moveSlider(1)">❯</button>
+                  </div>` 
+                : '<p class="ticket-history-placeholder">У вас пока нет купленных билетов. <a href="/" style="color:var(--primary-color)">Купить первый?</a></p>'
+            }
+        </div>
+        <div class="profile-section" style="margin-top: 50px;">
+            <h3>Мои чеки (платежи)</h3>
+            ${data.payments && data.payments.length > 0 
+                ? `<div class="tickets-slider-wrapper">
+                    <button class="slider-btn" id="prevReceiptBtn" onclick="moveReceiptSlider(-1)">❮</button>
+                    
+                    <div class="tickets-viewport">
+                        <div class="tickets-list" id="receiptsList">
+                            ${data.payments.map(payment => {
+                                const paymentJson = JSON.stringify(payment).replace(/"/g, '&quot;');
+                                return `
+                                <div class="receipt-card" ondblclick="openReceiptModal(${paymentJson})" style="cursor: pointer;">
+                                    <div class="receipt-header">ЭЛЕКТРОННЫЙ ЧЕК</div>
+                                    <div class="receipt-body">
+                                        <b>ID:</b> #${payment.id}<br>
+                                        <b>КАРТА:</b> **** ${payment.card_last_four}<br>
+                                        <b>ДАТА:</b> ${new Date(payment.created_at).toLocaleDateString('ru-RU')}
+                                    </div>
+                                    <div class="receipt-footer">
+                                        ${payment.amount} ₽
+                                    </div>
+                                </div>`;
+                            }).join('')}
                         </div>
                     </div>
-                `;
+
+                    <button class="slider-btn" id="nextReceiptBtn" onclick="moveReceiptSlider(1)">❯</button>
+                </div>`
+                : '<p class="ticket-history-placeholder">У вас пока нет совершённых платежей.</p>'
+            }
+        </div>
+    </div>
+`;
 
                 // --- Логика загрузки аватарки ---
                 const avatarUploadInput = document.getElementById('avatar-upload');
@@ -329,6 +520,87 @@
         `;
             }
         });
+        // Переменные для хранения позиции прокрутки (в самом начале скрипта)
+let ticketScroll = 0;
+let receiptScroll = 0;
+
+// Функция для билетов
+window.moveSlider = function(direction) {
+    const list = document.getElementById('ticketsList');
+    if (!list) return;
+    
+    const viewport = list.parentElement;
+    const card = list.querySelector('.ticket-card');
+    const step = card ? card.offsetWidth + 20 : 300; 
+    const maxScroll = list.scrollWidth - viewport.offsetWidth;
+
+    ticketScroll += direction * step;
+    if (ticketScroll < 0) ticketScroll = 0;
+    if (ticketScroll > maxScroll) ticketScroll = maxScroll;
+
+    list.style.transform = `translateX(-${ticketScroll}px)`;
+};
+
+// Функция для чеков (проверь, что ID в HTML совпадает с 'receiptsList')
+window.moveReceiptSlider = function(direction) {
+    const list = document.getElementById('receiptsList');
+    if (!list) return;
+    
+    const viewport = list.parentElement;
+    const card = list.querySelector('.receipt-card');
+    // Если карточка чека уже есть, берем её ширину, иначе стандарт 240
+    const step = card ? card.offsetWidth + 20 : 240; 
+    const maxScroll = list.scrollWidth - viewport.offsetWidth;
+
+    receiptScroll += direction * step;
+    
+    // Ограничители
+    if (receiptScroll < 0) receiptScroll = 0;
+    if (receiptScroll > maxScroll) receiptScroll = maxScroll;
+
+    list.style.transform = `translateX(-${receiptScroll}px)`;
+};
+window.openReceiptModal = function(payment) {
+    const modal = document.getElementById('ticket-modal');
+    const container = document.getElementById('ticket-container');
+    
+    // Если по какой-то причине элементы не найдены
+    if (!modal || !container) {
+        console.error("Элементы модального окна не найдены");
+        return;
+    }
+
+    // Формируем "бумажный" вид чека
+    container.innerHTML = `
+        <div style="background: #ffffff; color: #000000; padding: 30px; font-family: 'Courier New', Courier, monospace; max-width: 400px; margin: auto; border: 1px solid #000; box-shadow: 0 0 15px rgba(0,0,0,0.2); text-align: left;">
+            <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 15px;">
+                <h2 style="margin: 0; font-size: 20px;">КИНOДИПЛОМ</h2>
+                <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">
+                ФИЛЬМ: ${payment.movie_title}
+                </div>
+            </div>
+            
+            <div style="font-size: 14px; line-height: 1.6;">
+                <p style="margin: 5px 0;"><b>ЧЕК №:</b> ${payment.id}</p>
+                <p style="margin: 5px 0;"><b>ДАТА:</b> ${new Date(payment.created_at).toLocaleString('ru-RU')}</p>
+                <p style="margin: 5px 0;"><b>КАРТА:</b> **** ${payment.card_last_four}</p>
+                <p style="margin: 5px 0;"><b>ВЛАДЕЛЕЦ:</b> ${payment.card_holder || 'Клиент'}</p>
+                <hr style="border: none; border-top: 1px dashed #000; margin: 15px 0;">
+                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px;">
+                    <span>ИТОГО:</span>
+                    <span>${payment.amount} ₽</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; text-align: center; font-size: 11px; color: #555;">
+                <p>ЭЛЕКТРОННЫЙ ДОКУМЕНТ</p>
+                <p>ООО "КИНOДИПЛОМ"</p>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex'; // Показываем модальное окно
+};
     </script>
     <div id="refund-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
@@ -337,6 +609,15 @@
         <div class="modal-buttons">
             <button id="modal-cancel" class="btn-secondary">Отмена</button>
             <button id="modal-confirm" class="btn-refund-confirm">Да, вернуть</button>
+        </div>
+    </div>
+</div>
+<!-- Модальное окно для билета -->
+<div id="ticket-modal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+    <div class="modal-content" style="position: relative; width: 100%; max-width: 600px;">
+        <span id="close-ticket" style="position: absolute; right: -30px; top: -30px; color: #fff; font-size: 30px; cursor: pointer;">&times;</span>
+        <div id="ticket-container">
+            <!-- Сюда вставится разметка из JS -->
         </div>
     </div>
 </div>

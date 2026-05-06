@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerRight = document.querySelector('.header-right');
     if (!headerRight) return;
 
-    const avatarUrl = localStorage.getItem('userAvatarUrl') || '/default-avatar.png';
+    const avatarUrl = localStorage.getItem('userAvatarUrl') || '/images/default-avatar.png';
     const loginBtn = headerRight.querySelector('.btn-login');
     if (loginBtn) loginBtn.remove();
 
@@ -147,7 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         userBlock.innerHTML = `
             <div class="profile-avatar" id="go-to-profile" style="cursor:pointer;">
-                <img src="${avatarUrl}" alt="Avatar" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--primary-color); object-fit: cover;">
+                <img src="${avatarUrl}" alt="Avatar" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--primary-color); object-fit: cover;"
+                onerror="this.onerror=null; this.src='/images/default-avatar.png';">
             </div>
             <a href="#" class="logout-link" id="logout-link">Выйти</a>
         `;

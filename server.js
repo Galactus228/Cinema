@@ -303,7 +303,7 @@ fastify.post('/api/register', async (request, reply) => {
         );
 
         // 4. Создаем JWT токен, чтобы сразу "залогинить" пользователя
-        const token = fastify.jwt.sign({ userId: result.insertId, name: name, email: email, avatar_url: null });
+        const token = fastify.jwt.sign({ id: result.insertId, name: name, email: email, avatar_url: null });
 
         return reply.status(201).send({ message: 'Регистрация успешна', token: token, name: name, avatar_url: null });
 
@@ -389,7 +389,7 @@ fastify.get('/api/profile', { preHandler: [fastify.authenticate] }, async (reque
 
         // 2. Получаем историю билетов (чтобы не падала ошибка на data.bookings.length)
         const [tickets] = await pool.query(`
-            SELECT t.id, sess.start_time, m.title, s.row_num, s.seat_num
+            SELECT t.id, sess.start_time, sess.price, m.title, s.row_num, s.seat_num
             FROM tickets t
             JOIN sessions sess ON t.session_id = sess.id
             JOIN movies m ON sess.movie_id = m.id
@@ -397,12 +397,29 @@ fastify.get('/api/profile', { preHandler: [fastify.authenticate] }, async (reque
             WHERE t.user_id = ?
         `, [userId]);
 
+        // 3. НОВОЕ: Получаем историю транзакций (чеков)
+        const [transactions] = await pool.query(`
+            SELECT 
+                tr.id, 
+                tr.amount, 
+                tr.card_holder,
+                tr.card_last_four, 
+                tr.status, 
+                tr.created_at,
+                m.title AS movie_title
+            FROM transactions tr
+            JOIN sessions sess ON tr.session_id = sess.id
+            JOIN movies m ON sess.movie_id = m.id
+            WHERE tr.user_id = ? AND tr.status = 'success'
+            ORDER BY tr.created_at DESC
+        `, [userId]);
         // Отправляем всё вместе
         return {
             name: user.name,
             email: user.email,
             avatar_url: user.avatar_url,
-            bookings: tickets // Обязательно массив, даже если пустой
+            bookings: tickets, // Обязательно массив, даже если пустой
+            payments: transactions // Добавляем массив транзакций для чеков
         };
     } catch (err) {
         fastify.log.error(err);
@@ -496,10 +513,8 @@ fastify.get('/api/sessions/:id/price', async (request, reply) => {
 // API: Покупка билета (защищен токеном)
 fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, async (request, reply) => {
     const user_id = request.user.id;
-    // 1. Достаем ВСЕ нужные данные из тела запроса
     const { session_id, seat_id, card_number, card_holder, amount } = request.body;
 
-    // Защита: если фронтенд забыл прислать номер карты или имя
     if (!card_number || !card_holder) {
         return reply.status(400).send({ error: 'Данные карты не заполнены' });
     }
@@ -508,15 +523,18 @@ fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, asyn
     try {
         await connection.beginTransaction();
 
-        // 2. Логируем транзакцию (берем только последние 4 цифры)
+        // 1. Логируем транзакцию
         const lastFour = card_number.slice(-4);
-        await connection.query(
+        const [transResult] = await connection.query(
             `INSERT INTO transactions (user_id, session_id, amount, card_holder, card_last_four, status) 
              VALUES (?, ?, ?, ?, ?, 'success')`,
             [user_id, session_id, amount, card_holder, lastFour]
         );
 
-        // 3. Записываем сам билет
+        // Получаем ID созданной транзакции для чека
+        const transactionId = transResult.insertId;
+
+        // 2. Записываем билет
         await connection.query(
             'INSERT INTO tickets (session_id, seat_id, user_id, created_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 3 HOUR))',
             [session_id, seat_id, user_id]
@@ -524,7 +542,7 @@ fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, asyn
 
         await connection.commit();
 
-        // 4. Собираем данные для Email (JOIN)
+        // 3. Собираем данные для Email (JOIN)
         const [rows] = await pool.query(`
             SELECT u.email, m.title, s.start_time, st.row_num, st.seat_num, s.price
             FROM users u
@@ -540,13 +558,23 @@ fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, asyn
                 day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
 
-            sendTicketEmail(data.email, {
-                title: data.title,
-                date: formattedDate,
-                row: data.row_num,
-                seat: data.seat_num,
-                price: amount // Используем сумму из платежа
-            }).catch(mailErr => console.error('Ошибка отправки письма:', mailErr));
+            // ПЕРЕДАЕМ ТРИ АРГУМЕНТА: email, данные билета, данные чека
+            sendTicketEmail(
+                data.email, 
+                {
+                    title: data.title,
+                    date: formattedDate,
+                    row: data.row_num,
+                    seat: data.seat_num,
+                    price: amount
+                },
+                {
+                    id: transactionId,
+                    card_last_four: lastFour,
+                    card_holder: card_holder,
+                    amount: amount
+                }
+            ).catch(mailErr => console.error('Ошибка отправки письма:', mailErr));
         }
 
         return { success: true };

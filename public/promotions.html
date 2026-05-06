@@ -8,84 +8,36 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
     <style>
-        /* Сетка и карточки (аналогично новостям) */
-        .promo-grid {
-            display: grid;
-            /* Используем auto-fill и 300px, как в новостях */
-            grid-template-columns: 1fr 1fr 1fr; 
-            gap: 30px; /* Отступ ровно 30px, как в новостях */
-            margin-top: 40px;
-        }
-
-        .promo-card {
-            background: var(--surface-color);
-            border-radius: 15px;
-            overflow: hidden;
-            transition: transform 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.05);
-            /* Убери фиксированную ширину, если она где-то затесалась */
-            width: 100%;
-            max-width: 100%; 
-            box-sizing: border-box; 
-        }
+        /* Сетка акций */
+        .promo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; margin: 40px 0; }
+        .promo-card { background: var(--surface-color); border-radius: 15px; overflow: hidden; transition: transform 0.3s ease; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
         .promo-card:hover { transform: translateY(-5px); }
-        @media (max-width: 992px) {
-            .promo-grid {
-                grid-template-columns: 1fr 1fr; /* На планшетах 2 в ряд */
-            }
-        }
-
-        @media (max-width: 600px) {
-            .promo-grid {
-                grid-template-columns: 1fr; /* На телефонах 1 в ряд */
-            }
-        }
-        .container {
-            max-width: 1200px; /* или то число, которое у тебя в новостях */
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        .promo-image-wrapper {
-            width: 100%;
-            height: 200px;
-            overflow: hidden;
-        }
-        .promo-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background: #222;
-            transition: transform 0.5s ease;
-        }
-        .promo-card:hover .promo-image {
-            transform: scale(1.1);
-        }
-
+        .promo-image-wrapper { width: 100%; height: 200px; overflow: hidden; }
+        .promo-image { width: 100%; height: 100%; object-fit: cover; background: #222; }
         .promo-body { padding: 20px; }
-        
-        /* Бейдж со скидкой (уникально для акций) */
-        .promo-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: var(--primary-color);
-            color: white;
-            padding: 5px 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 0.9rem;
-            z-index: 2;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
+        .promo-badge { position: absolute; top: 15px; right: 15px; background: var(--primary-color); color: white; padding: 5px 12px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; z-index: 2; }
         .promo-title { font-size: 1.25rem; margin-bottom: 10px; color: white; }
         .promo-text { color: var(--text-muted); line-height: 1.6; font-size: 0.95rem; }
-        
-        /* Статус активности или срок действия (вместо даты новости) */
         .promo-status { color: var(--primary-color); font-size: 0.8rem; margin-bottom: 10px; display: block; font-weight: 600; }
+
+        /* Специальные стили для модалки акций (чтобы не конфликтовали с auth-modal) */
+        #promo-modal { display: none; }
+        .promo-modal-content { 
+            background: #1a1a1a; border-radius: 15px; border: 1px solid #333; 
+            max-width: 700px; width: 90%; overflow: hidden; position: relative; margin: auto;
+        }
+        .promo-modal-image { width: 100%; height: 350px; object-fit: cover; }
+        .promo-modal-body { padding: 30px; text-align: left; }
+        .promo-modal-title { color: var(--primary-color); font-size: 2rem; margin-top: 0; }
+        .promo-modal-text { color: #ccc; line-height: 1.8; font-size: 1.1rem; }
+        .close-promo { position: absolute; right: 20px; top: 15px; color: white; font-size: 35px; cursor: pointer; z-index: 10; }
+
+        @media (max-width: 992px) { .promo-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 600px) { .promo-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
+
     <header class="header">
         <div class="container header-content">
             <div class="logo" onclick="window.location.href='/'">🎬 ЭН-СИ</div>
@@ -103,15 +55,58 @@
                         </div>
                     </div>
                 </nav>
-                <button class="btn-login">Войти в профиль</button>
+                <button class="btn-login" id="header-login-btn">Войти в профиль</button>
             </div>
         </div>
     </header>
 
-    <div class="container">
-         <h1 class="section-title">Акции и спецпредложения</h1>
+    <main class="container">
+        <h1 class="section-title">Акции и спецпредложения</h1>
         <div id="promo-container" class="promo-grid">
+            <!-- Сюда JS загрузит карточки -->
+        </div>
+    </main>
+
+    <!-- МОДАЛЬНОЕ ОКНО АКЦИЙ -->
+    <div id="promo-modal" class="modal-overlay">
+        <div class="promo-modal-content">
+            <span class="close-promo" id="close-promo-btn">&times;</span>
+            <div id="promo-modal-data"></div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ (из твоего auth.js) -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div id="login-form-container">
+                <h2>Вход</h2>
+                <form id="login-form">
+                    <input type="email" id="login-email" placeholder="Email" required>
+                    <div class="password-wrapper">
+                        <input type="password" id="login-password" placeholder="Пароль" required>
+                        <span class="toggle-password" onclick="togglePasswordVisibility('login-password')">👁️</span>
+                    </div>
+                    <button type="submit" class="btn-primary">Войти</button>
+                    <p class="auth-switch">Нет аккаунта? <a href="#" id="go-to-register">Зарегистрироваться</a></p>
+                    <div id="login-error" class="error-msg"></div>
+                </form>
             </div>
+            <div id="register-form-container" style="display: none;">
+                <h2>Регистрация</h2>
+                <form id="register-form">
+                    <input type="text" id="reg-name" placeholder="Имя" required>
+                    <input type="email" id="reg-email" placeholder="Email" required>
+                    <div class="password-wrapper">
+                        <input type="password" id="reg-password" placeholder="Пароль" required>
+                        <span class="toggle-password" onclick="togglePasswordVisibility('reg-password')">👁️</span>
+                    </div>
+                    <button type="submit" class="btn-primary">Создать аккаунт</button>
+                    <p class="auth-switch">Уже есть аккаунт? <a href="#" id="go-to-login">Войти</a></p>
+                    <div id="reg-error" class="error-msg"></div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <footer class="footer-enhanced">
@@ -147,72 +142,84 @@
         </div>
     </footer>
 
-    <div id="auth-modal" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <div id="login-form-container">
-                <h2>Вход</h2>
-                <form id="login-form">
-                    <input type="email" id="login-email" placeholder="Email" required>
-                    <div class="password-wrapper">
-                        <input type="password" id="login-password" placeholder="Пароль" required>
-                        <span class="toggle-password" onclick="togglePasswordVisibility('login-password')">👁️</span>
-                    </div>
-                    <button type="submit" class="btn-primary">Войти</button>
-                    <p class="auth-switch">Нет аккаунта? <a href="#" id="go-to-register">Зарегистрироваться</a></p>
-                    <div id="login-error" class="error-msg"></div>
-                </form>
-            </div>
-            <div id="register-form-container" style="display: none;">
-                <h2>Регистрация</h2>
-                <form id="register-form">
-                    <input type="text" id="reg-name" placeholder="Имя" required>
-                    <input type="email" id="reg-email" placeholder="Email" required>
-                    <div class="password-wrapper">
-                        <input type="password" id="reg-password" placeholder="Пароль" required>
-                        <span class="toggle-password" onclick="togglePasswordVisibility('reg-password')">👁️</span>
-                    </div>
-                    <button type="submit" class="btn-primary">Создать аккаунт</button>
-                    <p class="auth-switch">Уже есть аккаунт? <a href="#" id="go-to-login">Войти</a></p>
-                    <div id="reg-error" class="error-msg"></div>
-                </form>
-            </div>
-        </div>
-    </div>
-
+    <!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ -->
     <script src="/js/auth.js"></script>
     <script>
+        // Функция открытия модалки акции
+        function openPromoDetails(promoData) {
+            const modal = document.getElementById('promo-modal');
+            const container = document.getElementById('promo-modal-data');
+            
+            container.innerHTML = `
+                <img src="${promoData.image_url}" class="promo-modal-image" onerror="this.src='/cinema_12223.png'">
+                <div class="promo-modal-body">
+                    <h2 class="promo-modal-title">${promoData.title}</h2>
+                    <div class="promo-modal-text">
+                        ${promoData.full_description || promoData.description}
+                    </div>
+                    <p style="margin-top: 20px; color: #888; font-style: italic; font-size: 0.9rem;">
+                        * Срок действия и условия акции могут быть изменены администрацией.
+                    </p>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        // Загрузка данных с сервера
         async function loadPromos() {
             try {
                 const res = await fetch('/api/promotions');
+                if (!res.ok) throw new Error('Ошибка сервера');
                 const promos = await res.json();
                 const container = document.getElementById('promo-container');
 
                 if (!promos || promos.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">Акций пока нет, но они скоро появятся!</p>';
+                    container.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Сейчас нет активных акций.</p>';
                     return;
                 }
 
-                container.innerHTML = promos.map(item => `
-                    <article class="promo-card">
+                container.innerHTML = promos.map(item => {
+                    const safeData = JSON.stringify(item).replace(/"/g, '&quot;');
+                    return `
+                    <article class="promo-card" ondblclick="openPromoDetails(${safeData})">
                         ${item.discount_tag ? `<div class="promo-badge">${item.discount_tag}</div>` : ''}
                         <div class="promo-image-wrapper">
-                            <img src="${item.image_url}" class="promo-image" alt="${item.title}" onerror="this.src='/cinema_12223.png'">
+                            <img src="${item.image_url}" class="promo-image" onerror="this.src='/cinema_12223.png'">
                         </div>
                         <div class="promo-body">
                             <span class="promo-status">Акция активна</span>
                             <h2 class="promo-title">${item.title}</h2>
                             <p class="promo-text">${item.description}</p>
                         </div>
-                    </article>
-                `).join('');
+                    </article>`;
+                }).join('');
             } catch (err) {
-                console.error("Ошибка загрузки акций:", err);
-                document.getElementById('promo-container').innerHTML = '<p style="text-align:center; grid-column: 1/-1;">Ошибка загрузки данных.</p>';
+                console.error("Ошибка при загрузке акций:", err);
+                document.getElementById('promo-container').innerHTML = '<p>Не удалось загрузить акции.</p>';
             }
         }
 
-        window.onload = loadPromos;
+        // Закрытие модалки акции
+        document.getElementById('close-promo-btn').onclick = () => {
+            document.getElementById('promo-modal').style.display = 'none';
+        };
+
+        // Глобальный обработчик кликов для закрытия модалок по фону
+        window.addEventListener('click', (event) => {
+            const promoModal = document.getElementById('promo-modal');
+            const authModal = document.getElementById('auth-modal');
+            
+            if (event.target === promoModal) {
+                promoModal.style.display = 'none';
+            }
+            // Закрытие auth-modal, если это не конфликтует с твоим auth.js
+            if (event.target === authModal) {
+                authModal.style.display = 'none';
+            }
+        });
+
+        // Запуск при старте
+        document.addEventListener('DOMContentLoaded', loadPromos);
     </script>
 </body>
 </html>
