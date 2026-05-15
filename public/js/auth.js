@@ -30,17 +30,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (logoutBtn) {
-    logoutBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.clear();
-        window.location.href = '/';
-    });
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.clear();
+            window.location.href = '/';
+        });
     }
 
     if (profileBtn) {
-    profileBtn.addEventListener('click', () => {
-        window.location.href = '/profile';
-    });
+        profileBtn.addEventListener('click', () => {
+            window.location.href = '/profile';
+        });
     }
     // --- Управление UI (открытие, закрытие, переключение) ---
     loginBtns.forEach(btn => {
@@ -72,8 +72,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password }),
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name,
+                    email,
+                    password
+                }),
             });
             const data = await response.json();
 
@@ -102,8 +108,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email,
+                    password
+                }),
             });
             const data = await response.json();
 
@@ -123,52 +134,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Функция сохранения данных в браузере ---
     function saveAuthData(token, name, avatarUrl = null) { // Добавляем avatarUrl
-    localStorage.setItem('jwtToken', token);
-    localStorage.setItem('userName', name);
-    localStorage.setItem('userAvatarUrl', avatarUrl); // <--- Сохраняем URL аватарки
+        localStorage.setItem('jwtToken', token);
+        localStorage.setItem('userName', name);
+        localStorage.setItem('userAvatarUrl', avatarUrl); // <--- Сохраняем URL аватарки
     }
 
 
     // --- Функция обновления интерфейса для залогиненного юзера ---
     function updateUIForLoggedInUser(userName) {
-    const headerRight = document.querySelector('.header-right');
-    if (!headerRight) return;
+        const headerRight = document.querySelector('.header-right');
+        if (!headerRight) return;
 
-    const avatarUrl = localStorage.getItem('userAvatarUrl') || '/images/default-avatar.png';
-    const loginBtn = headerRight.querySelector('.btn-login');
-    if (loginBtn) loginBtn.remove();
+        const avatarUrl = localStorage.getItem('userAvatarUrl') || '/images/default-avatar.png';
+        const loginBtn = headerRight.querySelector('.btn-login');
+        if (loginBtn) loginBtn.remove();
 
-    if (!headerRight.querySelector('.user-profile-block')) {
-        const userBlock = document.createElement('div');
-        userBlock.className = 'user-profile-block';
-        userBlock.style.display = 'flex';
-        userBlock.style.alignItems = 'center';
-        userBlock.style.gap = '15px';
+        if (!headerRight.querySelector('.user-profile-block')) {
+            const userBlock = document.createElement('div');
+            userBlock.className = 'user-profile-block';
+            userBlock.style.display = 'flex';
+            userBlock.style.alignItems = 'center';
+            userBlock.style.gap = '15px';
 
-        userBlock.innerHTML = `
+            userBlock.innerHTML = `
             <div class="profile-avatar" id="go-to-profile" style="cursor:pointer;">
                 <img src="${avatarUrl}" alt="Avatar" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--primary-color); object-fit: cover;"
                 onerror="this.onerror=null; this.src='/images/default-avatar.png';">
             </div>
             <a href="#" class="logout-link" id="logout-link">Выйти</a>
         `;
-        headerRight.appendChild(userBlock);
+            headerRight.appendChild(userBlock);
 
-        // ИСПРАВЛЕНИЕ: Разделяем обработчики
-        
-        // Клик по аватару — переход в профиль
-        document.getElementById('go-to-profile').onclick = () => {
-            window.location.href = '/profile';
-        };
+            // ИСПРАВЛЕНИЕ: Разделяем обработчики
 
-        // Клик по "Выйти" — только тогда разлогин
-        document.getElementById('logout-link').onclick = (e) => {
-            e.preventDefault();
-            localStorage.clear(); // Очищаем данные
-            window.location.href = '/'; // На главную
-        };
+            // Клик по аватару — переход в профиль
+            document.getElementById('go-to-profile').onclick = () => {
+                window.location.href = '/profile';
+            };
+
+            // Клик по "Выйти" — только тогда разлогин
+            document.getElementById('logout-link').onclick = (e) => {
+                e.preventDefault();
+                localStorage.clear(); // Очищаем данные
+                window.location.href = '/'; // На главную
+            };
+        }
     }
-}
 
 
 
@@ -180,10 +191,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const storedAvatarUrl = localStorage.getItem('userAvatarUrl'); // <--- Получаем URL
 
     if (storedToken && storedName) {
-    updateUIForLoggedInUser(storedName);
+        updateUIForLoggedInUser(storedName);
     }
 
-    });
+});
 
 // Глобальная функция для глазка пароля (оставляем без изменений)
 window.togglePasswordVisibility = function(inputId) {

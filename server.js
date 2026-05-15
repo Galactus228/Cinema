@@ -1,23 +1,21 @@
-const bcrypt = require('bcryptjs'); // Для хэширования паролей
-const fastifyJwt = require('@fastify/jwt'); // Для токенов авторизации
+const bcrypt = require('bcryptjs'); 
+const fastifyJwt = require('@fastify/jwt'); 
 const path = require('path');
-const fs = require('fs'); // Для работы с файловой системой
-const { pipeline } = require('stream'); // Для эффективной обработки потоков
-const util = require('util'); // Для promisy-фикации pipeline
-const { sendTicketEmail } = require('./public/js/emailService');
+const fs = require('fs'); 
+const { pipeline } = require('stream'); 
+const util = require('util'); 
+const { sendTicketEmail } = require('./public/js/emailservice');
 const pump = util.promisify(pipeline);
 const mysql = require('mysql2/promise');
 const fastify = require('fastify')({ logger: true });
 
-// Инициализация JWT
 fastify.register(fastifyJwt, {
-    secret: 'super_secret_diploma_key_12345' // Надежный секретный ключ
+    secret: 'super_secret_diploma_key_12345' 
 });
 
-// Регистрация плагина для загрузки файлов (multipart/form-data)
 fastify.register(require('@fastify/multipart'), {
     limits: {
-        fileSize: 5 * 1024 * 1024, // Максимальный размер файла 5MB
+        fileSize: 5 * 1024 * 1024,
     }
 });
 
@@ -29,7 +27,6 @@ fastify.decorate("authenticate", async function(request, reply) {
     }
 });
 
-// 1. Гарантируем, что папка uploads существует (чтобы при загрузке не было ошибки)
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -40,7 +37,6 @@ fastify.register(require('@fastify/static'), {
     prefix: '/'
 });
 
-// Настройки подключения к БД (берем из переменных окружения Docker)
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
@@ -51,12 +47,9 @@ const dbConfig = {
 
 let pool;
 
-// === ФУНКЦИЯ АВТООБНОВЛЕНИЯ ДАТ СЕАНСОВ ===
-// Она переносит все вчерашние (и более старые) сеансы на сегодня, сохраняя время
-// === ФУНКЦИЯ АВТОМАТИЧЕСКОГО СОЗДАНИЯ СЕАНСОВ ===
+
 async function generateDailySessions() {
     try {
-        // 1. Проверка на МСК (как в твоем исходнике)
         const [todaySessions] = await pool.query(`
             SELECT id FROM sessions 
             WHERE DATE(start_time) = DATE(DATE_ADD(NOW(), INTERVAL 3 HOUR))
@@ -74,7 +67,6 @@ async function generateDailySessions() {
 
             if (movies.length === 0 || halls.length === 0) return;
 
-            // 2. Генерируем все возможные уникальные слоты (Зал + Время)
             let allAvailableSlots = [];
             for (const hall of halls) {
                 for (const time of timeSlots) {
@@ -82,13 +74,9 @@ async function generateDailySessions() {
                 }
             }
 
-            // 3. Распределяем фильмы по этим слотам
-            // Теперь мы идем по списку СЛОТОВ, а не по списку ФИЛЬМОВ
             for (let i = 0; i < allAvailableSlots.length; i++) {
                 const slot = allAvailableSlots[i];
                 
-                // Выбираем фильм по кругу (оператор остатка от деления %)
-                // Если слотов 12, а фильмов 3 — каждый фильм покажется 4 раза в разных залах/времени
                 const movie = movies[i % movies.length];
 
                 await pool.query(`
@@ -103,7 +91,6 @@ async function generateDailySessions() {
         console.error("Ошибка при генерации сеансов:", err);
     }
 }
-// --- 1. Функция генерации сеансов на неделю ---
 async function generateWeeklySessions(pool) {
     try {
         const [movies] = await pool.query("SELECT id FROM movies WHERE status = 'now_playing'");
@@ -115,11 +102,8 @@ async function generateWeeklySessions(pool) {
         const price = 350.00;
 
         for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
-            // Получаем дату для MySQL: Сегодня + dayOffset
             const [dateRow] = await pool.query("SELECT DATE_ADD(CURDATE(), INTERVAL ? DAY) as targetDate", [dayOffset]);
             const targetDate = dateRow[0].targetDate;
-
-            // Проверяем, есть ли уже сеансы на эту дату
             const [existing] = await pool.query("SELECT id FROM sessions WHERE DATE(start_time) = ? LIMIT 1", [targetDate]);
 
             if (existing.length === 0) {
@@ -142,12 +126,9 @@ async function generateWeeklySessions(pool) {
         throw err; 
     }
 }
-// API для получения афиши и сеансов
 fastify.get('/api/now-playing', async (request, reply) => {
     try {
         const targetDate = request.query.date || new Date().toISOString().split('T')[0];
-
-        // Используем LEFT JOIN, чтобы не терять фильмы без сеансов
         const [rows] = await pool.query(`
             SELECT 
                 m.id as movie_id, m.title, m.poster_url, m.genre, m.duration,
@@ -157,8 +138,6 @@ fastify.get('/api/now-playing', async (request, reply) => {
             WHERE m.status = 'now_playing'
             ORDER BY m.id, s.start_time ASC
         `, [targetDate]);
-
-        // Группируем данные так, чтобы фильмы были всегда, а сеансы — если есть
         const moviesMap = {};
         
         rows.forEach(row => {
@@ -188,10 +167,8 @@ fastify.get('/api/now-playing', async (request, reply) => {
         return reply.status(500).send([]);
     }
 });
-// === НОВЫЙ API-МАРШРУТ ДЛЯ "СКОРО В КИНО" ===
 fastify.get('/api/coming-soon-movies', async (request, reply) => {
     try {
-        // Выбираем фильмы, ID которых НЕТ в таблице сеансов
         const [rows] = await pool.query(`
             SELECT id, title, poster_url, genre, duration
             FROM movies
@@ -204,7 +181,6 @@ fastify.get('/api/coming-soon-movies', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка БД' });
     }
 });
-// API для расписания (аналогично добавляем фильтрацию)
 fastify.get('/api/schedule', async (request, reply) => {
     try {
         await generateWeeklySessions(pool);
@@ -237,7 +213,6 @@ fastify.get('/api/schedule', async (request, reply) => {
         return []; 
     }
 });
-// Получение списка новостей
 fastify.get('/api/news', async (request, reply) => {
     try {
         const [rows] = await pool.query('SELECT * FROM news ORDER BY published_at DESC');
@@ -250,10 +225,7 @@ fastify.get('/api/news', async (request, reply) => {
 fastify.post('/api/purchase-tickets', async (request, reply) => {
     const { sessionId, seatIds, userId, cardNumber } = request.body;
 
-    // В реальной жизни здесь была бы интеграция с Stripe/Yookassa
-    // Мы имитируем успешную проверку
     try {
-        // Проверяем, не купил ли кто-то эти места, пока юзер вводил карту
         const [existing] = await pool.query(
             "SELECT id FROM tickets WHERE session_id = ? AND seat_id IN (?)",
             [sessionId, seatIds]
@@ -266,7 +238,6 @@ fastify.post('/api/purchase-tickets', async (request, reply) => {
         // Имитируем задержку банковской операции
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // Сохраняем каждый билет
         for (const seatId of seatIds) {
             await pool.query(
                 "INSERT INTO tickets (session_id, seat_id, user_id, status) VALUES (?, ?, ?, 'sold')",
@@ -281,28 +252,23 @@ fastify.post('/api/purchase-tickets', async (request, reply) => {
     }
 });
 
-// API: РЕГИСТРАЦИЯ ПОЛЬЗОВАТЕЛЯ
 fastify.post('/api/register', async (request, reply) => {
     const { name, email, password } = request.body;
 
     try {
-        // 1. Проверяем, не занят ли email
         const [existingUsers] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
         if (existingUsers.length > 0) {
             return reply.status(400).send({ error: 'Пользователь с таким email уже существует' });
         }
 
-        // 2. Хэшируем (шифруем) пароль
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // 3. Сохраняем в базу
         const [result] = await pool.query(
             'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
             [name, email, hashedPassword]
         );
 
-        // 4. Создаем JWT токен, чтобы сразу "залогинить" пользователя
         const token = fastify.jwt.sign({ id: result.insertId, name: name, email: email, avatar_url: null });
 
         return reply.status(201).send({ message: 'Регистрация успешна', token: token, name: name, avatar_url: null });
@@ -312,12 +278,10 @@ fastify.post('/api/register', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка сервера при регистрации' });
     }
 });
-// API: ВХОД ПОЛЬЗОВАТЕЛЯ
 fastify.post('/api/login', async (request, reply) => {
     const { email, password } = request.body;
 
     try {
-        // 1. Ищем пользователя по email
         const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         const user = users[0];
 
@@ -325,14 +289,12 @@ fastify.post('/api/login', async (request, reply) => {
             return reply.status(401).send({ error: 'Неверный email или пароль' });
         }
 
-        // 2. Сравниваем введенный пароль с хэшем в базе
         const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
         if (!isPasswordValid) {
             return reply.status(401).send({ error: 'Неверный email или пароль' });
         }
 
-        // 3. Если всё верно — выдаем токен
         const token = fastify.jwt.sign({ id: user.id, name: user.name, email: user.email, avatar_url: user.avatar_url });
 
         return reply.send({ message: 'Вход выполнен', token: token, name: user.name, avatar_url: user.avatar_url });
@@ -342,7 +304,6 @@ fastify.post('/api/login', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка сервера при авторизации' });
     }
 });
-// Роут для получения данных об акциях (JSON)
 fastify.get('/api/promotions', async (request, reply) => {
     try {
         // Подключаемся к БД и берем только активные акции
@@ -354,11 +315,9 @@ fastify.get('/api/promotions', async (request, reply) => {
         reply.status(500).send({ error: "Ошибка при получении данных из БД" });
     }
 });
-// API: Сохранение сообщения из формы контактов
 fastify.post('/api/contacts', async (request, reply) => {
     const { name, email, message } = request.body;
 
-    // Простая валидация
     if (!name || !email || !message) {
         return reply.status(400).send({ error: 'Все поля обязательны для заполнения' });
     }
@@ -373,12 +332,10 @@ fastify.post('/api/contacts', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка сервера при сохранении сообщения' });
     }
 });
-// API: ПОЛУЧЕНИЕ ДАННЫХ ПРОФИЛЯ (ЗАЩИЩЕННЫЙ)
 fastify.get('/api/profile', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     try {
         const userId = request.user.id;
 
-        // 1. Получаем данные пользователя
         const [userRows] = await pool.query('SELECT id, name, email, avatar_url FROM users WHERE id = ?', [userId]);
         
         if (userRows.length === 0) {
@@ -387,7 +344,6 @@ fastify.get('/api/profile', { preHandler: [fastify.authenticate] }, async (reque
 
         const user = userRows[0];
 
-        // 2. Получаем историю билетов (чтобы не падала ошибка на data.bookings.length)
         const [tickets] = await pool.query(`
             SELECT t.id, sess.start_time, sess.price, m.title, s.row_num, s.seat_num
             FROM tickets t
@@ -397,7 +353,6 @@ fastify.get('/api/profile', { preHandler: [fastify.authenticate] }, async (reque
             WHERE t.user_id = ?
         `, [userId]);
 
-        // 3. НОВОЕ: Получаем историю транзакций (чеков)
         const [transactions] = await pool.query(`
             SELECT 
                 tr.id, 
@@ -413,69 +368,50 @@ fastify.get('/api/profile', { preHandler: [fastify.authenticate] }, async (reque
             WHERE tr.user_id = ? AND tr.status = 'success'
             ORDER BY tr.created_at DESC
         `, [userId]);
-        // Отправляем всё вместе
         return {
             name: user.name,
             email: user.email,
             avatar_url: user.avatar_url,
-            bookings: tickets, // Обязательно массив, даже если пустой
-            payments: transactions // Добавляем массив транзакций для чеков
+            bookings: tickets, 
+            payments: transactions 
         };
     } catch (err) {
         fastify.log.error(err);
         return reply.status(500).send({ message: 'Ошибка сервера при получении профиля' });
     }
 });
-// API: Загрузка и обновление аватарки пользователя (защищенный)
 fastify.post('/api/profile/avatar', {
-    preHandler: [fastify.authenticate], // Защищаем маршрут
-    // Удаляем секцию schema, так как она конфликтует с multipart/form-data
-    // schema: {
-    //     body: {
-    //         type: 'object',
-    //         properties: {
-    //             avatar: { type: 'string', format: 'binary' }
-    //         },
-    //         required: ['avatar']
-    //     }
-    // }
+    preHandler: [fastify.authenticate],
 }, async (request, reply) => {
     const userId = request.user.id;
-    // Проверяем, что запрос действительно multipart
     if (!request.isMultipart()) {
         return reply.status(400).send({ error: 'Запрос должен быть multipart/form-data' });
     }
     try {
-        const data = await request.file(); // Получаем данные файла
+        const data = await request.file();
         if (!data || !data.file) {
             return reply.status(400).send({ error: 'Файл не загружен' });
         }
-        // Проверяем тип файла
         const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
         if (!allowedMimeTypes.includes(data.mimetype)) {
             return reply.status(400).send({ error: 'Разрешены только изображения (JPEG, PNG, WebP)' });
         }
-        // Генерируем уникальное имя файла
         const filename = `${userId}-${Date.now()}${path.extname(data.filename)}`;
         const filePath = path.join(uploadsDir, filename);
         const publicUrl = `/uploads/${filename}`; // URL, который будет храниться в БД
-        // Сохраняем файл на диск
         await pump(data.file, fs.createWriteStream(filePath));
-        // Обновляем avatar_url в базе данных
         await pool.query('UPDATE users SET avatar_url = ? WHERE id = ?', [publicUrl, userId]);
-        // Обновляем JWT токен с новой аватаркой
         const newToken = fastify.jwt.sign({ ...request.user, avatar_url: publicUrl });
         return reply.send({
             message: 'Аватар обновлен',
             avatar_url: publicUrl,
-            token: newToken // Отправляем новый токен с обновленной аватаркой
+            token: newToken
         });
     } catch (err) {
         fastify.log.error(err);
         return reply.status(500).send({ error: `Ошибка при загрузке аватарки: ${err.message}` });
     }
 });
-// API: Получить все места и их статус (занято/свободно)
 fastify.get('/api/sessions/:id/seats', async (request, reply) => {
     const { id } = request.params;
     try {
@@ -495,7 +431,6 @@ fastify.get('/api/sessions/:id/seats', async (request, reply) => {
         return reply.status(500).send({ error: 'Ошибка базы данных' });
     }
 });
-// НОВЫЙ РОУТ специально для получения цены, старый не трогаем
 fastify.get('/api/sessions/:id/price', async (request, reply) => {
     try {
         const { id } = request.params;
@@ -510,7 +445,6 @@ fastify.get('/api/sessions/:id/price', async (request, reply) => {
         return { price: 0, error: err.message };
     }
 });
-// API: Покупка билета (защищен токеном)
 fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, async (request, reply) => {
     const user_id = request.user.id;
     const { session_id, seat_id, card_number, card_holder, amount } = request.body;
@@ -523,7 +457,6 @@ fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, asyn
     try {
         await connection.beginTransaction();
 
-        // 1. Логируем транзакцию
         const lastFour = card_number.slice(-4);
         const [transResult] = await connection.query(
             `INSERT INTO transactions (user_id, session_id, amount, card_holder, card_last_four, status) 
@@ -531,10 +464,8 @@ fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, asyn
             [user_id, session_id, amount, card_holder, lastFour]
         );
 
-        // Получаем ID созданной транзакции для чека
         const transactionId = transResult.insertId;
 
-        // 2. Записываем билет
         await connection.query(
             'INSERT INTO tickets (session_id, seat_id, user_id, created_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 3 HOUR))',
             [session_id, seat_id, user_id]
@@ -542,7 +473,6 @@ fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, asyn
 
         await connection.commit();
 
-        // 3. Собираем данные для Email (JOIN)
         const [rows] = await pool.query(`
             SELECT u.email, m.title, s.start_time, st.row_num, st.seat_num, s.price
             FROM users u
@@ -558,7 +488,6 @@ fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, asyn
                 day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
 
-            // ПЕРЕДАЕМ ТРИ АРГУМЕНТА: email, данные билета, данные чека
             sendTicketEmail(
                 data.email, 
                 {
@@ -587,7 +516,6 @@ fastify.post('/api/book-ticket', { preValidation: [fastify.authenticate] }, asyn
         connection.release();
     }
 });
-// API для получения данных одного фильма по ID
 fastify.get('/api/movie/:id', async (request, reply) => {
     const { id } = request.params;
     try {
@@ -613,7 +541,6 @@ fastify.delete('/api/tickets/:id', { preValidation: [fastify.authenticate] }, as
     const userId = request.user.id;
 
     try {
-        // 1. Получаем инфо о билете (сеанс и место), чтобы знать, что обновлять
         const [tickets] = await pool.query(
             'SELECT session_id, seat_id FROM tickets WHERE id = ? AND user_id = ?',
             [ticketId, userId]
@@ -625,14 +552,11 @@ fastify.delete('/api/tickets/:id', { preValidation: [fastify.authenticate] }, as
 
         const { session_id, seat_id } = tickets[0];
 
-        // 2. Освобождаем место в зале
         await pool.query(
             'UPDATE seats SET is_taken = 0 WHERE id = ?',
             [seat_id]
         );
 
-        // 3. Обновляем транзакцию (ставим статус refunded)
-        // Мы используем LIMIT 1, чтобы отменить только одну транзакцию, если их было несколько
         await pool.query(
             `UPDATE transactions SET status = 'refunded' 
              WHERE user_id = ? AND session_id = ? AND status = 'success' 
@@ -640,7 +564,6 @@ fastify.delete('/api/tickets/:id', { preValidation: [fastify.authenticate] }, as
             [userId, session_id]
         );
 
-        // 4. Удаляем сам билет
         await pool.query('DELETE FROM tickets WHERE id = ?', [ticketId]);
 
         return { success: true, message: 'Билет возвращен, место свободно, статус транзакции изменен' };
@@ -672,13 +595,12 @@ fastify.get('/api/pushkin-status/:sessionId', async (request, reply) => {
             WHERE s.id = ?
         `, [sessionId]);
 
-        // Возвращаем 1 (доступна) или 0 (нет)
         return { isPushkinAvailable: rows[0] ? rows[0].pushkin_card : 0 };
     } catch (err) {
         return { isPushkinAvailable: 0 };
     }
 });
-fastify.get('/', (req, reply) => reply.sendFile('index.html'));
+fastify.get('/', (req, reply) => reply.sendFile('poster.html'));
 fastify.get('/about', (req, reply) => reply.sendFile('about.html'));
 fastify.get('/news', (req, reply) => reply.sendFile('news.html'));
 fastify.get('/coming-soon', (req, reply) => reply.sendFile('coming-soon.html'));
@@ -688,7 +610,7 @@ fastify.get('/booking', (req, reply) => {
     reply.sendFile('booking.html');
 });
 fastify.get('/faq', async (request, reply) => {
-    return reply.sendFile('faq.html'); // Убедись, что путь к файлу верный
+    return reply.sendFile('faq.html');
 });
 fastify.get('/privacy', async (request, reply) => {
     return reply.sendFile('privacy.html');
@@ -696,11 +618,9 @@ fastify.get('/privacy', async (request, reply) => {
 fastify.get('/contacts', async (request, reply) => {
     return reply.sendFile('contacts.html');
 });
-// Роут для страницы профиля
 fastify.get('/profile', (req, reply) => {
     reply.sendFile('profile.html');
 });
-// Роут для самой страницы фильма
 fastify.get('/movie', (req, reply) => {
     reply.sendFile('movie.html');
 });

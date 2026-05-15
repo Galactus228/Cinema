@@ -3,11 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateSelector = document.getElementById('date-selector');
     const params = new URLSearchParams(window.location.search);
     const filterMovieId = params.get('movieId');
-
-    // Ссылка на изображение для "пустого" состояния
     const EMPTY_IMAGE_URL = 'https://cdn-icons-png.flaticon.com/512/4076/4076402.png';
-
-    // По умолчанию выбрана сегодняшняя дата
     let selectedDate = new Date().toISOString().split('T')[0];
 
     async function loadSchedule(date) {
@@ -17,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`/api/schedule?date=${date}`);
             let sessions = await response.json();
 
-            // Если пришел не массив (ошибка сервера), делаем его пустым
             if (!Array.isArray(sessions)) sessions = [];
 
             if (filterMovieId) {
@@ -26,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             scheduleList.innerHTML = '';
 
-            // ПРОВЕРКА НА ПУСТОЕ РАСПИСАНИЕ
             if (sessions.length === 0) {
                 const emptyContainer = document.createElement('div');
                 emptyContainer.className = 'empty-schedule-state'; 
@@ -44,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             sessions.forEach(session => {
-                // Извлекаем только время HH:MM
                 const timeString = session.start_time.includes('T') 
                     ? session.start_time.split('T')[1].substring(0, 5)
                     : session.start_time.split(' ')[1].substring(0, 5);

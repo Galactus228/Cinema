@@ -1,21 +1,20 @@
-console.log("Скрипт app.js загружен и начал работу");
+console.log("Скрипт poster.js загружен и начал работу");
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("DOM полностью загружен. Начинаю запрос к API...");
     const moviesGrid = document.getElementById('movies-list');
-    
+
     if (!moviesGrid) {
         console.error("ОШИБКА: Элемент с id 'movies-list' не найден в HTML!");
         return;
     }
 
     try {
-        // ВАЖНО: используем путь /api/schedule, который выдает ваш JSON
         const response = await fetch('/api/now-playing');
         const movies = await response.json();
         console.log("Данные от API получены:", movies);
 
-        moviesGrid.innerHTML = ''; // Очищаем всё перед выводом
+        moviesGrid.innerHTML = '';
 
         if (movies.length === 0) {
             moviesGrid.innerHTML = '<p>Сеансов на сегодня больше нет.</p>';
@@ -28,11 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const sessionsHtml = movie.sessions.map(s => {
                 const date = new Date(s.time);
-                const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                const time = date.toLocaleTimeString('ru-RU', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
                 return `<button class="btn-session" title="${s.hall}">${time}</button>`;
             }).join('');
 
-            // Используем постер из базы или заглушку
             const posterStyle = movie.poster ? `style="background-image: url('${movie.poster}'); background-size: cover; background-position: center;"` : '';
 
             movieCard.innerHTML = `
@@ -57,5 +58,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         moviesGrid.innerHTML = '<p style="color: red;">Ошибка при загрузке афиши. Проверьте консоль (F12).</p>';
     }
 });
-
 

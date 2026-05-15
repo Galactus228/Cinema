@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,33 +10,140 @@
     <link rel="stylesheet" href="/css/style.css">
     <style>
         /* Сетка акций */
-        .promo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; margin: 40px 0; }
-        .promo-card { background: var(--surface-color); border-radius: 15px; overflow: hidden; transition: transform 0.3s ease; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
-        .promo-card:hover { transform: translateY(-5px); }
-        .promo-image-wrapper { width: 100%; height: 200px; overflow: hidden; }
-        .promo-image { width: 100%; height: 100%; object-fit: cover; background: #222; }
-        .promo-body { padding: 20px; }
-        .promo-badge { position: absolute; top: 15px; right: 15px; background: var(--primary-color); color: white; padding: 5px 12px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; z-index: 2; }
-        .promo-title { font-size: 1.25rem; margin-bottom: 10px; color: white; }
-        .promo-text { color: var(--text-muted); line-height: 1.6; font-size: 0.95rem; }
-        .promo-status { color: var(--primary-color); font-size: 0.8rem; margin-bottom: 10px; display: block; font-weight: 600; }
+        .promo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .promo-card {
+            background: var(--surface-color);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .promo-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .promo-image-wrapper {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .promo-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #222;
+        }
+
+        .promo-body {
+            padding: 20px;
+        }
+
+        .promo-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--primary-color);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            z-index: 2;
+        }
+
+        .promo-title {
+            font-size: 1.25rem;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .promo-text {
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .promo-status {
+            color: var(--primary-color);
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            display: block;
+            font-weight: 600;
+        }
 
         /* Специальные стили для модалки акций (чтобы не конфликтовали с auth-modal) */
-        #promo-modal { display: none; }
-        .promo-modal-content { 
-            background: #1a1a1a; border-radius: 15px; border: 1px solid #333; 
-            max-width: 700px; width: 90%; overflow: hidden; position: relative; margin: auto;
+        #promo-modal {
+            display: none;
         }
-        .promo-modal-image { width: 100%; height: 350px; object-fit: cover; }
-        .promo-modal-body { padding: 30px; text-align: left; }
-        .promo-modal-title { color: var(--primary-color); font-size: 2rem; margin-top: 0; }
-        .promo-modal-text { color: #ccc; line-height: 1.8; font-size: 1.1rem; }
-        .close-promo { position: absolute; right: 20px; top: 15px; color: white; font-size: 35px; cursor: pointer; z-index: 10; }
 
-        @media (max-width: 992px) { .promo-grid { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 600px) { .promo-grid { grid-template-columns: 1fr; } }
+        .promo-modal-content {
+            background: #1a1a1a;
+            border-radius: 15px;
+            border: 1px solid #333;
+            max-width: 700px;
+            width: 90%;
+            overflow: hidden;
+            position: relative;
+            margin: auto;
+        }
+
+        .promo-modal-image {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+        }
+
+        .promo-modal-body {
+            padding: 30px;
+            text-align: left;
+        }
+
+        .promo-modal-title {
+            color: var(--primary-color);
+            font-size: 2rem;
+            margin-top: 0;
+        }
+
+        .promo-modal-text {
+            color: #ccc;
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+
+        .close-promo {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            color: white;
+            font-size: 35px;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        @media (max-width: 992px) {
+            .promo-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .promo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
+
 <body>
 
     <header class="header">
@@ -149,7 +257,7 @@
         function openPromoDetails(promoData) {
             const modal = document.getElementById('promo-modal');
             const container = document.getElementById('promo-modal-data');
-            
+
             container.innerHTML = `
                 <img src="${promoData.image_url}" class="promo-modal-image" onerror="this.src='/cinema_12223.png'">
                 <div class="promo-modal-body">
@@ -208,7 +316,7 @@
         window.addEventListener('click', (event) => {
             const promoModal = document.getElementById('promo-modal');
             const authModal = document.getElementById('auth-modal');
-            
+
             if (event.target === promoModal) {
                 promoModal.style.display = 'none';
             }
@@ -222,4 +330,5 @@
         document.addEventListener('DOMContentLoaded', loadPromos);
     </script>
 </body>
+
 </html>

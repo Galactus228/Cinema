@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
 </head>
+
 <body>
     <!-- Используем ту же шапку, что и на главной -->
     <header class="header">
@@ -38,10 +40,10 @@
             <h1 class="section-title">О нашем проекте</h1>
             <div class="about-content">
                 <p>
-                    Добро пожаловать в "КиноДиплом" — дипломный проект, разработанный для демонстрации современных подходов к созданию веб-приложений. 
+                    Добро пожаловать в "КиноДиплом" — дипломный проект, разработанный для демонстрации современных подходов к созданию веб-приложений.
                     Эта информационная система для бронирования и продажи билетов в кинотеатр создана с нуля и включает в себя полный цикл разработки, от проектирования до развертывания.
                 </p>
-                
+
                 <h3>Используемый стек технологий:</h3>
                 <ul>
                     <li><strong>Frontend:</strong> Чистый HTML, CSS и JavaScript.</li>
@@ -59,86 +61,87 @@
     </main>
 
     <footer class="footer-enhanced">
-    <div class="container">
-        <div class="footer-content">
-            
-            <!-- Колонка 1: Логотип и описание -->
-            <div class="footer-column about-us">
-                <h3 class="footer-logo">🎬 ЭН-СИ</h3>
-                <p>
-                    Современная система бронирования билетов, созданная в рамках дипломного проекта с использованием Node.js, Fastify, MySQL и Docker.
-                </p>
-            </div>
-            
-            <!-- Колонка 2: Навигация по сайту -->
-            <div class="footer-column navigation">
-                <h3 class="footer-heading">Навигация</h3>
-                <ul>
-                    <li><a href="/">Афиша</a></li>
-                    <li><a href="/schedule">Расписание</a></li>
-                    <li><a href="/coming-soon">Скоро в кино</a></li>
-                    <li><a href="/news">Новости</a></li>
-                    <li><a href="/promotions">Акции и скидки</a></li>
-                    <li><a href="/about">О нас</a></li>
-                </ul>
+        <div class="container">
+            <div class="footer-content">
+
+                <!-- Колонка 1: Логотип и описание -->
+                <div class="footer-column about-us">
+                    <h3 class="footer-logo">🎬 ЭН-СИ</h3>
+                    <p>
+                        Современная система бронирования билетов, созданная в рамках дипломного проекта с использованием Node.js, Fastify, MySQL и Docker.
+                    </p>
+                </div>
+
+                <!-- Колонка 2: Навигация по сайту -->
+                <div class="footer-column navigation">
+                    <h3 class="footer-heading">Навигация</h3>
+                    <ul>
+                        <li><a href="/">Афиша</a></li>
+                        <li><a href="/schedule">Расписание</a></li>
+                        <li><a href="/coming-soon">Скоро в кино</a></li>
+                        <li><a href="/news">Новости</a></li>
+                        <li><a href="/promotions">Акции и скидки</a></li>
+                        <li><a href="/about">О нас</a></li>
+                    </ul>
+                </div>
+
+                <!-- Колонка 3: Информация -->
+                <div class="footer-column info">
+                    <h3 class="footer-heading">Информация</h3>
+                    <ul>
+                        <li><a href="/faq">Часто задаваемые вопросы</a></li>
+                        <li><a href="/privacy">Политика конфиденциальности</a></li>
+                        <li><a href="/contacts">Контакты</a></li>
+                    </ul>
+                </div>
+
             </div>
 
-            <!-- Колонка 3: Информация -->
-            <div class="footer-column info">
-                <h3 class="footer-heading">Информация</h3>
-                <ul>
-                    <li><a href="/faq">Часто задаваемые вопросы</a></li>
-                    <li><a href="/privacy">Политика конфиденциальности</a></li>
-                    <li><a href="/contacts">Контакты</a></li>
-                </ul>
+            <!-- Нижняя часть футера с копирайтом -->
+            <div class="footer-bottom">
+                <p>&copy; 2026. Все права защищены. Дипломный проект.</p>
             </div>
-
         </div>
-        
-        <!-- Нижняя часть футера с копирайтом -->
-        <div class="footer-bottom">
-            <p>&copy; 2026. Все права защищены. Дипломный проект.</p>
-        </div>
-    </div>
-   </footer>
+    </footer>
     <!-- Модальное окно авторизации/регистрации -->
-<div id="auth-modal" class="modal-overlay">
-    <div class="modal-content">
-        <span class="close-modal">&times;</span>
-        
-        <!-- Форма Входа -->
-        <div id="login-form-container">
-            <h2>Вход</h2>
-            <form id="login-form">
-                <input type="email" id="login-email" placeholder="Email" required>
-                <div class="password-wrapper">
-                <input type="password" id="login-password" placeholder="Пароль" required>
-                <span class="toggle-password" onclick="togglePasswordVisibility('login-password')">👁️</span>
-                </div>
-                <button type="submit" class="btn-primary">Войти</button>
-                <p class="auth-switch">Нет аккаунта? <a href="#" id="go-to-register">Зарегистрироваться</a></p>
-                <div id="login-error" class="error-msg"></div>
-            </form>
-        </div>
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
 
-        <!-- Форма Регистрации (скрыта по умолчанию) -->
-        <div id="register-form-container" style="display: none;">
-            <h2>Регистрация</h2>
-            <form id="register-form">
-                <input type="text" id="reg-name" placeholder="Имя" required>
-                <input type="email" id="reg-email" placeholder="Email" required>
-                <div class="password-wrapper">
-                <input type="password" id="reg-password" placeholder="Пароль" required>
-                <span class="toggle-password" onclick="togglePasswordVisibility('reg-password')">👁️</span>
-                </div>
-                <button type="submit" class="btn-primary">Создать аккаунт</button>
-                <p class="auth-switch">Уже есть аккаунт? <a href="#" id="go-to-login">Войти</a></p>
-                <div id="reg-error" class="error-msg"></div>
-            </form>
+            <!-- Форма Входа -->
+            <div id="login-form-container">
+                <h2>Вход</h2>
+                <form id="login-form">
+                    <input type="email" id="login-email" placeholder="Email" required>
+                    <div class="password-wrapper">
+                        <input type="password" id="login-password" placeholder="Пароль" required>
+                        <span class="toggle-password" onclick="togglePasswordVisibility('login-password')">👁️</span>
+                    </div>
+                    <button type="submit" class="btn-primary">Войти</button>
+                    <p class="auth-switch">Нет аккаунта? <a href="#" id="go-to-register">Зарегистрироваться</a></p>
+                    <div id="login-error" class="error-msg"></div>
+                </form>
+            </div>
+
+            <!-- Форма Регистрации (скрыта по умолчанию) -->
+            <div id="register-form-container" style="display: none;">
+                <h2>Регистрация</h2>
+                <form id="register-form">
+                    <input type="text" id="reg-name" placeholder="Имя" required>
+                    <input type="email" id="reg-email" placeholder="Email" required>
+                    <div class="password-wrapper">
+                        <input type="password" id="reg-password" placeholder="Пароль" required>
+                        <span class="toggle-password" onclick="togglePasswordVisibility('reg-password')">👁️</span>
+                    </div>
+                    <button type="submit" class="btn-primary">Создать аккаунт</button>
+                    <p class="auth-switch">Уже есть аккаунт? <a href="#" id="go-to-login">Войти</a></p>
+                    <div id="reg-error" class="error-msg"></div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
-<!-- Общий скрипт для работы с авторизацией -->
-<script src="/js/auth.js"></script>
+    <!-- Общий скрипт для работы с авторизацией -->
+    <script src="/js/auth.js"></script>
 </body>
+
 </html>

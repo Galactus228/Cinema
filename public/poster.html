@@ -4,18 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Расписание - Кинотеатр "Дипломный"</title> 
+    <title>Кинотеатр "Дипломный"</title>
     <link rel="icon" type="image/png" href="/cinema_12223.png">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=2">
 </head>
 
 <body>
+
     <header class="header">
         <div class="container header-content">
-            <div class="logo" onclick="window.location.href='/'">🎬 ЭН-СИ</div>
+            <div class="logo">🎬 ЭН-СИ</div>
+
             <div class="header-right">
                 <nav class="nav">
+                    <!-- Блок выпадающего меню -->
                     <div class="dropdown">
                         <span class="dropdown-trigger">Меню ▾</span>
                         <div class="dropdown-content">
@@ -28,21 +31,19 @@
                         </div>
                     </div>
                 </nav>
+
                 <button class="btn-login">Войти в профиль</button>
             </div>
+
         </div>
     </header>
 
     <main class="container">
-        <section class="schedule-section">
-            <h1 class="section-title">Расписание сеансов</h1>
+        <section class="movies-section">
+            <h1 class="section-title">Сейчас в кино</h1>
 
-            <div id="date-selector" class="date-selector"></div>
+            <div id="movies-list" class="movies-grid"></div>
 
-            <div id="schedule-list" class="schedule-list">
-                
-                <p>Загрузка расписания...</p>
-            </div>
         </section>
     </main>
 
@@ -85,7 +86,7 @@
             </div>
         </div>
     </footer>
-    <script src="/js/schedule.js"></script>
+    <script src="/js/poster.js"></script>
     <div id="auth-modal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
@@ -124,3 +125,4 @@
 </body>
 
 </html>
+

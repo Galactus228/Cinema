@@ -1,24 +1,71 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <title>Оплата заказа - КиноДиплом</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
-        .pay-box { max-width: 400px; margin: 100px auto; background: #1a1a1a; padding: 30px; border-radius: 15px; border: 1px solid #333; }
-        .card-form input { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #444; color: #fff; border-radius: 5px; font-family: monospace; font-size: 1.1rem; }
-        .card-row { display: flex; gap: 10px; }
-        .btn-pay { width: 100%; padding: 15px; background: #e50914; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .btn-pay:disabled { background: #555; }
-        .total-info { text-align: center; margin-bottom: 20px; color: #888; }
-        .total-info b { color: #fff; font-size: 1.5rem; }
+        .pay-box {
+            max-width: 400px;
+            margin: 100px auto;
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid #333;
+        }
+
+        .card-form input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #000;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+
+        .card-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-pay {
+            width: 100%;
+            padding: 15px;
+            background: #e50914;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .btn-pay:disabled {
+            background: #555;
+        }
+
+        .total-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #888;
+        }
+
+        .total-info b {
+            color: #fff;
+            font-size: 1.5rem;
+        }
     </style>
 </head>
+
 <body>
     <div class="pay-box">
         <h2 style="text-align: center;">Оплата картой</h2>
         <div class="total-info">Сумма к оплате: <br><b id="display-price">0</b> руб.</div>
-        
+
         <form id="payment-form" class="card-form">
             <input type="text" id="card-num" placeholder="0000 0000 0000 0000" maxlength="19" required>
             <div class="card-row">
@@ -31,58 +78,59 @@
     </div>
 
     <script>
-    document.getElementById('payment-form').onsubmit = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('pay-button');
-    const token = localStorage.getItem('jwtToken'); // Берем токен для авторизации
-    
-    btn.disabled = true;
-    btn.innerText = 'Обработка платежа...';
+        document.getElementById('payment-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('pay-button');
+            const token = localStorage.getItem('jwtToken'); // Берем токен для авторизации
 
-    // 1. Имитируем банковскую задержку
-    await new Promise(resolve => setTimeout(resolve, 1500));
+            btn.disabled = true;
+            btn.innerText = 'Обработка платежа...';
 
-    // 2. Получаем данные из URL
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('sessionId');
-    const seatIds = params.get('seats').split(','); // Превращаем строку "1,2,3" в массив [1, 2, 3]
+            // 1. Имитируем банковскую задержку
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
-    let successCount = 0;
+            // 2. Получаем данные из URL
+            const params = new URLSearchParams(window.location.search);
+            const sessionId = params.get('sessionId');
+            const seatIds = params.get('seats').split(','); // Превращаем строку "1,2,3" в массив [1, 2, 3]
 
-    // 3. ТВОЙ ЦИКЛ БРОНИРОВАНИЯ
-    for (let id of seatIds) {
-        try {
-            const res = await fetch('/api/book-ticket', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: JSON.stringify({ 
-                    session_id: sessionId, 
-                    seat_id: id 
-                })
-            });
+            let successCount = 0;
 
-            if (res.ok) successCount++;
-        } catch (err) {
-            console.error("Ошибка при бронировании места ID:", id);
-        }
-    }
+            // 3. ТВОЙ ЦИКЛ БРОНИРОВАНИЯ
+            for (let id of seatIds) {
+                try {
+                    const res = await fetch('/api/book-ticket', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            session_id: sessionId,
+                            seat_id: id
+                        })
+                    });
 
-    // 4. Финальный результат
-    if (successCount === seatIds.length) {
-        alert('Оплата прошла успешно! Все билеты забронированы.');
-        window.location.href = '/profile'; // Или на главную
-    } else if (successCount > 0) {
-        alert(`Оплачено, но забронировано только ${successCount} из ${seatIds.length}. Обратитесь в поддержку.`);
-        window.location.href = '/';
-    } else {
-        alert('Ошибка при связи с сервером бронирования.');
-        btn.disabled = false;
-        btn.innerText = 'Попробовать снова';
-    }
-};
+                    if (res.ok) successCount++;
+                } catch (err) {
+                    console.error("Ошибка при бронировании места ID:", id);
+                }
+            }
+
+            // 4. Финальный результат
+            if (successCount === seatIds.length) {
+                alert('Оплата прошла успешно! Все билеты забронированы.');
+                window.location.href = '/profile'; // Или на главную
+            } else if (successCount > 0) {
+                alert(`Оплачено, но забронировано только ${successCount} из ${seatIds.length}. Обратитесь в поддержку.`);
+                window.location.href = '/';
+            } else {
+                alert('Ошибка при связи с сервером бронирования.');
+                btn.disabled = false;
+                btn.innerText = 'Попробовать снова';
+            }
+        };
     </script>
 </body>
+
 </html>

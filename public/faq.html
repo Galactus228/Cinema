@@ -1,20 +1,30 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <title>FAQ - КиноДиплом</title>
     <link rel="icon" type="image/png" href="/cinema_12223.png">
     <link rel="stylesheet" href="/css/style.css">
     <style>
-        .faq-container { max-width: 800px; margin: 50px auto; padding: 0 20px; }
-        .faq-title { text-align: center; margin-bottom: 40px; color: var(--primary-color); }
-        
+        .faq-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 0 20px;
+        }
+
+        .faq-title {
+            text-align: center;
+            margin-bottom: 40px;
+            color: var(--primary-color);
+        }
+
         .faq-item {
             background: var(--surface-color);
             margin-bottom: 15px;
             border-radius: 10px;
             overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .faq-question {
@@ -27,7 +37,9 @@
             transition: background 0.3s;
         }
 
-        .faq-question:hover { background: rgba(255,255,255,0.05); }
+        .faq-question:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
 
         .faq-answer {
             padding: 0 20px;
@@ -40,7 +52,8 @@
 
         .faq-item.active .faq-answer {
             padding: 0 20px 20px 20px;
-            max-height: 500px; /* Достаточно для текста */
+            max-height: 500px;
+            /* Достаточно для текста */
         }
 
         .faq-icon {
@@ -48,9 +61,12 @@
             color: var(--primary-color);
         }
 
-        .faq-item.active .faq-icon { transform: rotate(180deg); }
+        .faq-item.active .faq-icon {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
+
 <body>
     <header class="header">
         <div class="container header-content">
@@ -96,4 +112,5 @@
         });
     </script>
 </body>
+
 </html>
